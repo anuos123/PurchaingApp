@@ -1,0 +1,57 @@
+.picker {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  background: white;
+}
+
+.container {
+  padding: 15px;
+  padding-bottom: 80px;
+}
+
+.filter-bar .picker {
+  width: 120px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  width: 90%;
+  max-width: 400px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 15px;
+  background: #67C23A;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.modal-body {
+  padding: 15px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 15px;
+  border-top: 1px solid #eee;
+}

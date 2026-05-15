@@ -1,0 +1,76 @@
+<view class="container">
+  <view class="card">
+    <view class="card-header">
+      <text>历史采购</text>
+      <button class="btn btn-danger" style="font-size: 12px; padding: 6px 12px;" bindtap="clearHistory">一键清空</button>
+    </view>
+    
+    <view class="card-body">
+      <view class="filter-bar">
+        <picker value="{{filterOptions.findIndex(o => o.value === filterType)}}" range="{{filterOptions.map(o => o.label)}}" bindchange="onFilterChange">
+          <view class="picker">
+            {{filterOptions.find(o => o.value === filterType)?.label}}
+          </view>
+        </picker>
+      </view>
+      
+      <view style="display: flex; justify-content: space-around; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+        <view class="stat-item">
+          <text class="stat-value">{{filteredHistory.length}}</text>
+          <text class="stat-label">采购次数</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value">{{totalCount}}</text>
+          <text class="stat-label">采购品类</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value" style="color: #E6A23C;">¥{{totalAmount.toFixed(2)}}</text>
+          <text class="stat-label">总金额</text>
+        </view>
+      </view>
+      
+      <view wx:if="{{filteredHistory.length === 0}}" class="empty-state">
+        😊 暂无历史采购记录
+      </view>
+      
+      <view wx:else>
+        <view wx:for="{{filteredHistory}}" wx:key="id" class="history-item">
+          <view class="history-header">
+            <view style="display: flex; align-items: center; gap: 10px;">
+              <text style="font-weight: bold; font-size: 16px;">📅 {{item.date}}</text>
+              <text style="color: #999; font-size: 13px;">{{item.time}}</text>
+            </view>
+            <text style="color: #E6A23C; font-weight: bold; font-size: 16px;">¥{{item.totalAmount.toFixed(2)}}</text>
+          </view>
+          <view class="history-items">
+            <view wx:for="{{item.items}}" wx:key="id" class="history-row">
+              <text style="flex: 2;">{{item.name}}</text>
+              <text style="flex: 1; text-align: center;">×{{item.quantity}}</text>
+              <text style="flex: 1; text-align: center;">¥{{item.price.toFixed(2)}}</text>
+              <text style="flex: 1; text-align: right; color: #67C23A;">¥{{(item.quantity * item.price).toFixed(2)}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="custom-tab-bar">
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/ingredients/ingredients">
+      <text class="tab-icon">🍅</text>
+      <text class="tab-text">食材清单</text>
+    </view>
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/purchase/purchase">
+      <text class="tab-icon">🛒</text>
+      <text class="tab-text">采购任务</text>
+    </view>
+    <view class="tab-item active" bindtap="switchTab" data-url="/pages/history/history">
+      <text class="tab-icon">📜</text>
+      <text class="tab-text">历史采购</text>
+    </view>
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/customers/customers">
+      <text class="tab-icon">👥</text>
+      <text class="tab-text">客户名单</text>
+    </view>
+  </view>
+</view>

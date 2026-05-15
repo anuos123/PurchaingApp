@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>采购系统-食材端</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Microsoft YaHei', sans-serif; background: #f5f5f5; }
+    .header { background: linear-gradient(135deg, #67C23A 0%, #85ce61 100%); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 20px; font-weight: bold; }
+    .nav { display: flex; gap: 20px; }
+    .nav a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 20px; transition: background 0.3s; }
+    .nav a:hover { background: rgba(255,255,255,0.2); }
+    .nav a.active { background: rgba(255,255,255,0.3); }
+    .main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+    .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+    .card-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #333; display: flex; justify-content: space-between; align-items: center; }
+    .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s; }
+    .btn-primary { background: #409EFF; color: white; }
+    .btn-primary:hover { background: #67B8FF; }
+    .btn-success { background: #67C23A; color: white; }
+    .btn-success:hover { background: #85ce61; }
+    .btn-warning { background: #E6A23C; color: white; }
+    .btn-warning:hover { background: #f0c78a; }
+    .btn-danger { background: #F56C6C; color: white; }
+    .btn-danger:hover { background: #F78989; }
+    .btn-default { background: #f0f0f0; color: #666; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 8px; padding: 20px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+    .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .login-container { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+    .login-card { width: 400px; }
+    .user-info { display: flex; align-items: center; gap: 15px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .stat-card { background: white; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .stat-card.green { border-left: 4px solid #67C23A; }
+    .stat-card.blue { border-left: 4px solid #409EFF; }
+    .stat-card.orange { border-left: 4px solid #E6A23C; }
+    .stat-card.red { border-left: 4px solid #F56C6C; }
+    .stat-value { font-size: 28px; font-weight: bold; color: #333; }
+    .stat-label { font-size: 14px; color: #999; margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">采购系统-食材端 <span style="font-size:12px; color:rgba(255,255,255,0.7); font-weight:normal;">v1.00</span></div>
+    <div class="nav" id="nav">
+      <a href="#ingredients" class="active" onclick="showTab('ingredients')">食材清单</a>
+      <a href="#purchaseList" onclick="showTab('purchaseList')">采购任务</a>
+      <a href="#purchaseHistory" onclick="showTab('purchaseHistory')">历史采购</a>
+      <a href="#customers" onclick="showTab('customers')">客户名单</a>
+    </div>
+    <div class="user-info" id="userInfo">
+      <span id="userName">用户</span>
+    </div>
+  </div>
+  
+  <div class="main">
+    <div id="ingredientsTab">
+      <div class="card">
+        <div class="card-header">
+          <span>食材清单</span>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-primary" onclick="showAddIngredientModal()">添加食材</button>
+            <button class="btn btn-success" onclick="exportIngredients()">导出Excel</button>
+            <button class="btn btn-warning" onclick="showImportModal()">导入Excel</button>
+          </div>
+        </div>
+        <div style="padding:15px;">
+          <div style="margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="ingredientSearch" placeholder="搜索食材..." style="padding:8px 12px; border:1px solid #ddd; border-radius:4px; width:200px; transition:border-color 0.3s;" oninput="filterIngredients()">
+            <select id="ingredientCategory" style="padding:8px 12px; border:1px solid #ddd; border-radius:4px; transition:border-color 0.3s;" onchange="filterIngredients()">
+              <option value="">全部分类</option>
+              <option value="冻品">冻品</option>
+              <option value="酱料">酱料</option>
+              <option value="蔬菜">蔬菜</option>
+              <option value="肉类">肉类</option>
+            </select>
+            <button class="btn btn-default" onclick="clearIngredientFilter()" style="padding:8px 16px;">清除筛选</button>
+          </div>
+          <div id="filterResult" style="margin-bottom:15px; font-size:13px; color:#666; display:none;"></div>
+          <div id="ingredientsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:15px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="purchaseListTab" style="display:none;">
+      <div class="card">
+        <div class="card-header">
+          <span>采购任务</span>
+          <button class="btn btn-success" onclick="showSelectIngredientModal()">从食材清单选择</button>
+        </div>
+        <div style="padding:15px;">
+          <div style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="purchaseSearch" placeholder="搜索采购项..." style="padding:8px 12px; border:1px solid #ddd; border-radius:4px; width:200px;">
+            <button class="btn btn-default" onclick="searchPurchases()">搜索</button>
+            <button class="btn btn-danger" onclick="deleteAllPurchases()">一键清空全部</button>
+          </div>
+          <table style="width:100%; border-collapse:separate; border-spacing:0; border-radius:8px; overflow:hidden;">
+            <thead>
+              <tr style="background:#f8f9fa;">
+                <th style="padding:12px 15px; text-align:center; font-weight:bold; border-bottom:1px solid #ddd; width:5%;"><input type="checkbox" id="selectAllPurchases" onchange="toggleSelectAllPurchases()"></th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:22%;">采购项名称</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:13%;">关联食材</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:10%;">数量</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:10%;">预估单价</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:10%;">总价</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:15%;">备注</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:15%;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="purchasesTable"></tbody>
+          </table>
+          <div id="purchaseSummary" style="margin-top:15px; padding:15px; background:#f8f9fa; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>总计：<strong id="purchaseTotalCount">0</strong> 项</span>
+            <span>预估总价：<strong style="color:#E6A23C; font-size:18px;">¥<span id="purchaseTotalPrice">0.00</span></strong></span>
+          </div>
+        </div>
+      </div>
+      <button id="completePurchaseBtn" style="position:fixed; bottom:30px; right:30px; background:linear-gradient(135deg, #67C23A 0%, #85ce61 100%); color:white; border:none; border-radius:50px; padding:15px 30px; font-size:16px; font-weight:bold; cursor:pointer; box-shadow:0 4px 15px rgba(103, 194, 58, 0.4); z-index:1000; transition:all 0.3s ease;" onclick="completeTodayPurchases()">
+        ✓ 完成今日采购
+      </button>
+    </div>
+    
+    <div id="purchaseHistoryTab" style="display:none;">
+      <div class="card">
+        <div class="card-header">
+          <span>历史采购</span>
+          <div style="display:flex; gap:10px;">
+            <select id="historyPeriod" style="padding:6px 10px; border:1px solid #ddd; border-radius:4px;">
+              <option value="all">全部</option>
+              <option value="today">最近当天</option>
+              <option value="3days">最近3天</option>
+              <option value="7days">最近7天</option>
+              <option value="15days">最近15天</option>
+              <option value="month">这个月</option>
+            </select>
+            <button class="btn btn-success" onclick="filterPurchaseHistory()">筛选</button>
+            <button class="btn btn-default" onclick="clearHistoryFilter()">清除筛选</button>
+          </div>
+        </div>
+        <div style="padding:15px;">
+          <table style="width:100%; border-collapse:separate; border-spacing:0; border-radius:8px; overflow:hidden;">
+            <thead>
+              <tr style="background:#f8f9fa;">
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:10%;">记录ID</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:15%;">采购日期</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:20%;">采购项</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:10%;">数量</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:12%;">总金额</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:18%;">备注</th>
+              </tr>
+            </thead>
+            <tbody id="purchaseHistoryTable"></tbody>
+          </table>
+          <div id="historySummary" style="margin-top:15px; padding:15px; background:#f8f9fa; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>总计采购记录：<strong id="historyTotalCount">0</strong> 条</span>
+            <span>累计采购金额：<strong style="color:#67C23A; font-size:18px;">¥<span id="historyTotalAmount">0.00</span></strong></span>
+          </div>
+        </div>
+      </div>
+      <button id="clearHistoryBtn" style="position:fixed; bottom:30px; right:30px; background:linear-gradient(135deg, #F56C6C 0%, #f87171 100%); color:white; border:none; border-radius:50px; padding:15px 30px; font-size:16px; font-weight:bold; cursor:pointer; box-shadow:0 4px 15px rgba(245, 108, 108, 0.4); z-index:1000; transition:all 0.3s ease;" onclick="clearAllPurchaseHistory()">
+        🗑️ 一键清空历史
+      </button>
+    </div>
+    
+    <div id="customersTab" style="display:none;">
+      <div class="card">
+        <div class="card-header">
+          <span>客户名单</span>
+          <button class="btn btn-primary" onclick="showAddCustomerModal()">添加客户</button>
+        </div>
+        <div style="padding:15px;">
+          <table style="width:100%; border-collapse:separate; border-spacing:0; border-radius:8px; overflow:hidden;">
+            <thead>
+              <tr style="background:#f8f9fa;">
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:7%;">客户ID</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:8%;">姓名</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:10%;">手机号</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:12%;">邮箱</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:10%;">微信/QQ</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:12%;">公司名称</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:18%;">单位地址</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:10%;">备注</th>
+                <th style="padding:12px 15px; text-align:left; font-weight:bold; border-bottom:1px solid #ddd; width:13%;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="customersTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="addIngredientModal">
+    <div class="modal">
+      <div class="modal-header">添加食材</div>
+      <div style="padding:10px;">
+        <div class="form-group">
+          <label>食材名称</label>
+          <input type="text" id="ingredientName" placeholder="请输入食材名称">
+        </div>
+        <div class="form-group">
+          <label>分类</label>
+          <select id="ingredientNewCategory">
+            <option value="冻品">冻品</option>
+            <option value="酱料">酱料</option>
+            <option value="蔬菜">蔬菜</option>
+            <option value="肉类">肉类</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>规格</label>
+          <input type="text" id="ingredientSpec" placeholder="例如：500g/份">
+        </div>
+        <div class="form-group">
+          <label>预估单价</label>
+          <input type="number" id="ingredientPrice" placeholder="请输入预估单价" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>备注</label>
+          <textarea id="ingredientNote" placeholder="请输入备注信息" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" onclick="closeAddIngredientModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveIngredient()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="selectIngredientModal">
+    <div class="modal" style="max-width:600px;">
+      <div class="modal-header">从食材清单选择</div>
+      <div style="max-height:400px; overflow-y:auto;">
+        <div id="ingredientSelectList"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" onclick="closeSelectIngredientModal()">取消</button>
+        <button class="btn btn-primary" onclick="addSelectedIngredients()">添加到采购任务</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="importModal">
+    <div class="modal">
+      <div class="modal-header">导入食材</div>
+      <div style="padding:10px;">
+        <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFileSelect()">
+        <button class="btn btn-primary" style="width:100%; padding:15px;" onclick="document.getElementById('importFile').click()">点击选择Excel文件</button>
+        <div style="margin-top:15px; padding:15px; background:#f8f9fa; border-radius:4px;">
+          <div style="font-size:12px; color:#666; margin-bottom:5px;">支持格式：.xlsx, .xls, .csv</div>
+          <div style="font-size:12px; color:#666;">文件格式要求：第一行为表头（食材名称,分类,规格,预估单价,备注）</div>
+        </div>
+        <div id="importPreview" style="margin-top:15px; display:none;">
+          <div style="font-weight:bold; margin-bottom:10px;">预览数据：</div>
+          <div id="importPreviewContent"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" onclick="closeImportModal()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="addCustomerModal">
+    <div class="modal">
+      <div class="modal-header">添加客户</div>
+      <div style="padding:10px;">
+        <div class="form-group">
+          <label>客户姓名</label>
+          <input type="text" id="customerName" placeholder="请输入客户姓名">
+        </div>
+        <div class="form-group">
+          <label>手机号码</label>
+          <input type="tel" id="customerPhone" placeholder="请输入手机号码">
+        </div>
+        <div class="form-group">
+          <label>邮箱</label>
+          <input type="email" id="customerEmail" placeholder="请输入邮箱地址">
+        </div>
+        <div class="form-group">
+          <label>微信/QQ</label>
+          <input type="text" id="customerWechat" placeholder="请输入微信号或QQ号">
+        </div>
+        <div class="form-group">
+          <label>公司名称</label>
+          <input type="text" id="customerCompany" placeholder="请输入公司名称">
+        </div>
+        <div class="form-group">
+          <label>单位地址</label>
+          <input type="text" id="customerAddress" placeholder="请输入单位地址">
+        </div>
+        <div class="form-group">
+          <label>备注</label>
+          <textarea id="customerNote" placeholder="请输入备注信息" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" onclick="closeAddCustomerModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveCustomer()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEYS = {
+      INGREDIENTS: 'ingredients',
+      PURCHASES: 'purchases',
+      PURCHASE_HISTORY: 'purchase_history',
+      CUSTOMERS: 'customers'
+    };
+
+    function initData() {
+      if (!localStorage.getItem(STORAGE_KEYS.INGREDIENTS)) {
+        localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify([
+          { id: 'I-1', name: '西红柿', category: '蔬菜', spec: '500g', price: 3.5, note: '新鲜', createdAt: '2024-01-01 10:00:00' },
+          { id: 'I-2', name: '冻鸡腿', category: '冻品', spec: '1kg', price: 20.0, note: '冷冻', createdAt: '2024-01-01 10:01:00' },
+          { id: 'I-3', name: '猪肉', category: '肉类', spec: '500g', price: 25.0, note: '五花肉', createdAt: '2024-01-01 10:02:00' },
+          { id: 'I-4', name: '白菜', category: '蔬菜', spec: '1颗', price: 2.0, note: '', createdAt: '2024-01-01 10:03:00' },
+          { id: 'I-5', name: '生抽', category: '酱料', spec: '500ml', price: 8.0, note: '酿造酱油', createdAt: '2024-01-01 10:04:00' },
+          { id: 'I-6', name: '冻虾仁', category: '冻品', spec: '500g', price: 35.0, note: '南美白虾', createdAt: '2024-01-01 10:05:00' },
+          { id: 'I-7', name: '牛肉', category: '肉类', spec: '500g', price: 45.0, note: '牛腩', createdAt: '2024-01-01 10:06:00' },
+          { id: 'I-8', name: '蚝油', category: '酱料', spec: '500g', price: 12.0, note: '', createdAt: '2024-01-01 10:07:00' }
+        ]));
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.PURCHASES)) {
+        localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify([]));
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.PURCHASE_HISTORY)) {
+        localStorage.setItem(STORAGE_KEYS.PURCHASE_HISTORY, JSON.stringify([]));
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.CUSTOMERS)) {
+        localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify([
+          { id: 'C-1', name: '张三', phone: '13800138001', email: 'zhang@test.com', wechat: 'zhangsan', company: 'XX公司', note: 'VIP客户', createdAt: '2024-01-01 10:00:00' },
+          { id: 'C-2', name: '李四', phone: '13800138002', email: 'li@test.com', wechat: 'lisi', company: 'YY公司', note: '', createdAt: '2024-01-02 11:00:00' }
+        ]));
+      }
+    }
+
+    function showTab(tabName) {
+      document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+      document.querySelector(`a[href="#${tabName}"]`).classList.add('active');
+      
+      document.querySelectorAll('[id$="Tab"]').forEach(tab => tab.style.display = 'none');
+      document.getElementById(`${tabName}Tab`).style.display = 'block';
+      
+      if (tabName === 'ingredients') renderIngredients();
+      if (tabName === 'purchaseList') renderPurchases();
+      if (tabName === 'purchaseHistory') renderPurchaseHistory();
+      if (tabName === 'customers') renderCustomers();
+    }
+
+    function showAddIngredientModal() {
+      document.getElementById('ingredientName').value = '';
+      document.getElementById('ingredientName').dataset.id = '';
+      document.getElementById('ingredientNewCategory').value = '蔬菜';
+      document.getElementById('ingredientSpec').value = '';
+      document.getElementById('ingredientPrice').value = '';
+      document.getElementById('ingredientNote').value = '';
+      document.getElementById('addIngredientModal').style.display = 'flex';
+    }
+
+    function closeAddIngredientModal() {
+      document.getElementById('addIngredientModal').style.display = 'none';
+    }
+
+    function saveIngredient() {
+      const name = document.getElementById('ingredientName').value.trim();
+      const category = document.getElementById('ingredientNewCategory').value;
+      const spec = document.getElementById('ingredientSpec').value.trim();
+      const price = parseFloat(document.getElementById('ingredientPrice').value) || 0;
+      const note = document.getElementById('ingredientNote').value.trim();
+      const editId = document.getElementById('ingredientName').dataset.id;
+      
+      if (!name) {
+        alert('请输入食材名称！');
+        return;
+      }
+      
+      const ingredients = JSON.parse(localStorage.getItem(STORAGE_KEYS.INGREDIENTS) || '[]');
+      
+      if (editId) {
+        const index = ingredients.findIndex(i => i.id === editId);
+        if (index !== -1) {
+          ingredients[index] = {
+            ...ingredients[index],
+            name,
+            category,
+            spec: spec || '-',
+            price,
+            note: note || '-'
+          };
+        }
+      } else {
+        const maxId = Math.max(...ingredients.map(i => parseInt(i.id.split('-')[1]) || 0), 0);
+        const ingredientId = 'I-' + (maxId + 1);
+        ingredients.push({
+          id: ingredientId,
+          name,
+          category,
+          spec: spec || '-',
+          price,
+          note: note || '-',
+          createdAt: new Date().toLocaleString()
+        });
+      }
+      
+      localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(ingredients));
+      closeAddIngredientModal();
+      renderIngredients();
+      alert(editId ? '食材更新成功！' : '食材添加成功！');
+    }
+
+    function renderIngredients() {
+      const search = document.getElementById('ingredientSearch').value.toLowerCase();
+      const category = document.getElementById('ingredientCategory').value;
+      
+      let ingredients = JSON.parse(localStorage.getItem(STORAGE_KEYS.INGREDIENTS) || '[]');
+      const totalCount = ingredients.length;
+      
+      ingredients = ingredients.filter(i => {
+        const matchSearch = i.name.toLowerCase().includes(search);
+        const matchCategory = !category || i.category === category;
+        return matchSearch && matchCategory;
+      });
+      
+      const grid = document.getElementById('ingredientsGrid');
+      const filterResult = document.getElementById('filterResult');
+      
+      if (search || category) {
+        filterResult.style.display = 'block';
+        filterResult.innerHTML = `<span style="color:#67C23A;">筛选结果：</span> 从 ${totalCount} 条食材中找到 ${ingredients.length} 条匹配数据`;
+        if (search) filterResult.innerHTML += `<span style="margin-left:10px;">关键词：<strong>${search}</strong></span>`;
+        if (category) filterResult.innerHTML += `<span style="margin-left:10px;">分类：<strong>${category}</strong></span>`;
+      } else {
+        filterResult.style.display = 'none';
+      }
+      
+      if (ingredients.length === 0) {
+        grid.innerHTML = '<div style="padding:50px; text-align:center; color:#999; grid-column:1/-1;">😔 没有找到匹配的食材</div>';
+        return;
+      }
+      
+      const categoryColors = {
+        '冻品': '#409EFF',
+        '酱料': '#E6A23C',
+        '蔬菜': '#67C23A',
+        '肉类': '#F56C6C'
+      };
+      
+      grid.innerHTML = ingredients.map(i => `
+        <div style="border:1px solid #eee; border-radius:8px; padding:15px; position:relative; transition:all 0.3s ease; cursor:pointer;" onmouseenter="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'; this.style.transform='translateY(-2px)'" onmouseleave="this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+            <div style="font-size:16px; font-weight:bold;">${i.name}</div>
+            <span style="background:${categoryColors[i.category] || '#999'}; color:white; font-size:11px; padding:2px 8px; border-radius:10px;">${i.category}</span>
+          </div>
+          <div style="font-size:12px; color:#666; margin-bottom:4px;">规格：${i.spec}</div>
+          <div style="font-size:18px; color:#E6A23C; font-weight:bold; margin-bottom:10px;">¥${i.price.toFixed(2)}</div>
+          ${i.note && i.note !== '-' ? `<div style="font-size:12px; color:#999; margin-bottom:10px;">备注：${i.note}</div>` : ''}
+          <div style="display:flex; gap:5px; position:absolute; bottom:15px; right:15px;">
+            <button class="btn" style="background:#409EFF; color:white; padding:4px 10px; font-size:12px; border-radius:4px; transition:background 0.3s;" onclick="editIngredient('${i.id}')">编辑</button>
+            <button class="btn" style="background:#F56C6C; color:white; padding:4px 10px; font-size:12px; border-radius:4px; transition:background 0.3s;" onclick="deleteIngredient('${i.id}')">删除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function filterIngredients() {
+      renderIngredients();
+    }
+    
+    function clearIngredientFilter() {
+      document.getElementById('ingredientSearch').value = '';
+      document.getElementById('ingredientCategory').value = '';
+      renderIngredients();
+    }
+
+    function editIngredient(id) {
+      const ingredients = JSON.parse(localStorage.getItem(STORAGE_KEYS.INGREDIENTS) || '[]');
+      const ingredient = ingredients.find(i => i.id === id);
+      
+      if (ingredient) {
+        document.getElementById('ingredientName').value = ingredient.name;
+        document.getElementById('ingredientName').dataset.id = id;
+        document.getElementById('ingredientNewCategory').value = ingredient.category;
+        document.getElementById('ingredientSpec').value = ingredient.spec;
+        document.getElementById('ingredientPrice').value = ingredient.price;
+        document.getElementById('ingredientNote').value = ingredient.note;
+        document.getElementById('addIngredientModal').style.display = 'flex';
+      }
+    }
+
+    function deleteIngredient(id) {
+      if (!confirm('确定要删除这个食材吗？')) return;
+      
+      let ingredients = JSON.parse(localStorage.getItem(STORAGE_KEYS.INGREDIENTS) || '[]');
+      ingredients = ingredients.filter(i => i.id !== id);
+      localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(ingredients));
+      renderIngredients();
+      alert('删除成功！');
+    }
+
+    function searchIngredients() {
+      renderIngredients();
+    }
+
+    function exportIngredients() {
+      const ingredients = JSON.parse(localStorage.getItem(STORAGE_KEYS.INGREDIENTS) || '[]');
+      
+      if (ingredients.length === 0) {
+        alert('暂无食材数据可导出！');
+        return;
+      }
+      
+      let csvContent = '食材名称,分类,规格,预估单价,备注,创建时间\n';
+      
+      ingredients.forEach(ingredient => {
+        const row = [
+          `"${ingredient.name}"`,
+          `"${ingredient.category}"`,
+          `"${ingredient.spec}"`,
+          ingredient.price,
+          `"${ingredient.note}"`,
+          `"${ingredient.createdAt}"`
+        ];
+        csvContent += row.join(',') + '\n';
+      });
+      
+      const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `食材清单_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      alert('导出成功！');
+    }
+
+    function showImportModal() {
+      document.getElementById('importPreview').style.display = 'none';
+      document.getElementById('importFile').value = '';
+      document.getElementById('importModal').style.display = 'flex';
+    }
+
+    function closeImportModal() {
+      document.getElementById('importModal').style.display = 'none';
+    }
+
+    function handleFileSelect() {
+      const file = document.getElementById('importFile').files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const arrayBuffer = e.target.result;
+        const text = decodeText(arrayBuffer);
+        parseFileContent(text);
+      };
+      
+      reader.readAsArrayBuffer(file);
+    }
+
+    function decodeText(arrayBuffer) {
+      const encodings = ['UTF-8', 'GBK', 'GB2312', 'GB18030', 'Big5'];
+      
+      for (const encoding of encodings) {
+        try {
+          const decoder = new TextDecoder(encoding, { fatal: true });
+          const text = decoder.decode(arrayBuffer);
+          if (!hasInvalidChars(text)) {
+            return text;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      const fallbackDecoder = new TextDecoder('GBK', { fatal: false });
+      return fallbackDecoder.decode(arrayBuffer);
+    }
+
+    function hasInvalidChars(text) {
+      const invalidPattern = /[\uFFFD]/;
+      return invalidPattern.test(text);
+    }
+
+    function parseFileContent(text) {
+      const lines = text.split('\n').filter(line => line.trim());
+      if (lines.length < 2) {
+        alert('文件内容为空或格式不正确！');
+        return;
+      }
+      
+      const headers = lines[0].split(',').map(h => h.trim().replace(/["']/g, ''));
+      const nameIndex = headers.findIndex(h => h.includes('名称'));
+      const categoryIndex = headers.findIndex(h => h.includes('分类'));
+      const specIndex = headers.findIndex(h => h.includes('规格'));
+      const priceIndex = headers.findIndex(h => h.includes('单价') || h.includes('价格'));
+      const noteIndex = headers.findIndex(h => h.includes('备注'));
+      
+      if (nameIndex === -1) {
+        alert('未找到食材名称列！');
+        return;
+      }
+      
+      const newIngredients = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        const values = parseCSVLine(line);
+        
+        const name = values[nameIndex]?.replace(/["']/g, '').trim();
+        if (!name) continue;
+        
+        newIngredients.push({
+          name: name,
+          category: values[categoryIndex]?.replace(/["']/g, '').trim() || '其他',
+          spec: values[specIndex]?.replace(/["']/g, '').trim() || '-',
+          price: parseFloat(values[priceIndex]?.replace(/["']/g, '').trim()) || 0,
+          note: values[noteIndex]?.replace(/["']/g, '').trim() || '-'
+        });
+      }
+      
+      if (newIngredients.length === 0) {
+        alert('未找到有效数据！');
+        return;
+      }
+      
+      const preview = newIngredients.slice(0, 5).map((item, index) => 
+        `<div style="font-size:12px; padding:5px; border-bottom:1px solid #eee;">${index + 1}. ${item.name} - ${item.category} - ¥${item.price.toFixed(2)}</div>`
+      ).join('');
+      
+      document.getElementById('importPreviewContent').innerHTML = preview;
+      document.getElementById('importPreview').style.display = 'block';
+      
+      const existingIngredients = JSON.parse(localStorage.getItem(STORAGE_KEYS.INGREDIENTS) || '[]');
+      const duplicates = newIngredients.filter(newItem => 
+        existingIngredients.some(existing => existing.name === newItem.name)
+      );
+      
+      if (duplicates.length > 0) {
+        const duplicateNames = duplicates.map(d => d.name).join(', ');
+        if (!confirm(`检测到 ${duplicates.length} 条重复数据：${duplicateNames}\n\n是否继续导入？`)) {
+          return;
+        }
+      }
+      
+      newIngredients.forEach(item => {
+        const existingIndex = existingIngredients.findIndex(i => i.name === item.name);
+        if (existingIndex !== -1) {
+          existingIngredients[existingIndex] = { ...existingIngredients[existingIndex], ...item };
+        } else {
+          const maxId = Math.max(...existingIngredients.map(i => parseInt(i.id.split('-')[1]) || 0), 0);
+          item.id = 'I-' + (maxId + 1);
+          item.createdAt = new Date().toLocaleString();
+          existingIngredients.push(item);
+        }
+      });
+      
+      localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(existingIngredients));
+      closeImportModal();
+      renderIngredients();
+      alert(`成功导入 ${newIngredients.length} 条食材数据！`);
+    }
+
+    function parseCSVLine(line) {
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current);
+      
+      return values;
+    }
+
+    function showSelectIngredientModal() {
+      const ingredients = JSON.parse(localStorage.getItem(STORAGE_KEYS.INGREDIENTS) || '[]');
+      const list = document.getElementById('ingredientSelectList');
+      
+      if (ingredients.length === 0) {
+        list.innerHTML = '<div style="padding:30px; text-align:center; color:#999;">暂无食材数据，请先添加食材</div>';
+      } else {
+        list.innerHTML = ingredients.map(i => `
+          <div style="padding:10px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <input type="checkbox" class="ingredient-select-cb" value="${i.id}" data-name="${i.name}" data-price="${i.price}">
+            <span style="flex:1; min-width:100px;">${i.name}</span>
+            <span style="color:#666; font-size:12px;">${i.category}</span>
+            <div style="display:flex; align-items:center; gap:5px;">
+              <span style="font-size:12px; color:#999;">数量:</span>
+              <input type="number" class="ingredient-quantity" data-id="${i.id}" value="1" min="1" max="999" style="width:60px; padding:4px; border:1px solid #ddd; border-radius:3px; font-size:12px;">
+            </div>
+            <div style="display:flex; align-items:center; gap:5px;">
+              <span style="font-size:12px; color:#999;">单价:</span>
+              <input type="number" class="ingredient-price" data-id="${i.id}" value="${i.price.toFixed(2)}" min="0" step="0.01" style="width:80px; padding:4px; border:1px solid #ddd; border-radius:3px; font-size:12px;">
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      document.getElementById('selectIngredientModal').style.display = 'flex';
+    }
+
+    function closeSelectIngredientModal() {
+      document.getElementById('selectIngredientModal').style.display = 'none';
+    }
+
+    function addSelectedIngredients() {
+      const checkboxes = document.querySelectorAll('.ingredient-select-cb:checked');
+      if (checkboxes.length === 0) {
+        alert('请先选择食材！');
+        return;
+      }
+      
+      let purchases = JSON.parse(localStorage.getItem(STORAGE_KEYS.PURCHASES) || '[]');
+      let startIndex = purchases.length;
+      let addedCount = 0;
+      let mergedCount = 0;
+      
+      checkboxes.forEach(cb => {
+        const today = new Date().toISOString().split('T')[0];
+        const ingredientId = cb.value;
+        const quantityInput = document.querySelector(`.ingredient-quantity[data-id="${ingredientId}"]`);
+        const priceInput = document.querySelector(`.ingredient-price[data-id="${ingredientId}"]`);
+        const quantity = parseInt(quantityInput?.value) || 1;
+        const price = parseFloat(priceInput?.value) || parseFloat(cb.dataset.price) || 0;
+        const ingredientName = cb.dataset.name;
+        
+        const existingPurchase = purchases.find(p => p.name === ingredientName);
+        
+        if (existingPurchase) {
+          const oldTotal = existingPurchase.price * existingPurchase.quantity;
+          const newTotal = price * quantity;
+          existingPurchase.quantity += quantity;
+          existingPurchase.price = (oldTotal + newTotal) / existingPurchase.quantity;
+          mergedCount++;
+        } else {
+          const purchaseId = 'P-' + (++startIndex);
+          purchases.push({
+            id: purchaseId,
+            name: ingredientName,
+            ingredientId: cb.value,
+            ingredientName: ingredientName,
+            quantity: quantity,
+            price: price,
+            note: '-',
+            status: 'pending',
+            planDate: today,
+            createdAt: new Date().toLocaleString()
+          });
+          addedCount++;
+        }
+      });
+      
+      localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
+      closeSelectIngredientModal();
+      renderPurchases();
+      
+      let message = '';
+      if (addedCount > 0) message += `新增 ${addedCount} 项`;
+      if (mergedCount > 0) message += (message ? '，' : '') + `合并 ${mergedCount} 项（数量和价格已叠加）`;
+      alert(message + '！');
+    }
+
+    function renderPurchases() {
+      const search = document.getElementById('purchaseSearch').value.toLowerCase();
+      
+      let purchases = JSON.parse(localStorage.getItem(STORAGE_KEYS.PURCHASES) || '[]');
+      
+      if (search) {
+        purchases = purchases.filter(p => p.name.toLowerCase().includes(search));
+      }
+      
+      const tbody = document.getElementById('purchasesTable');
+      
+      if (purchases.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="padding:30px; text-align:center; color:#999;">暂无采购任务</td></tr>';
+        updatePurchaseSummary([]);
+        return;
+      }
+      
+      tbody.innerHTML = purchases.map((p, index) => {
+        const totalPrice = (p.quantity * p.price).toFixed(2);
+        return `
+        <tr style="background:${index % 2 === 0 ? '#ffffff' : '#fafafa'};">
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; text-align:center;">
+            <input type="checkbox" class="purchase-checkbox" value="${p.id}">
+          </td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${p.name}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; color:#666;">${p.ingredientName || '-'}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${p.quantity}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; color:#E6A23C;">¥${p.price.toFixed(2)}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; color:#67C23A; font-weight:bold;">¥${totalPrice}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; color:#999; font-size:13px;">${p.note}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; display:flex; gap:8px; align-items:center;">
+            <select style="padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:12px; cursor:pointer; flex-shrink:0; background:${p.status === 'pending' ? '#fff3cd' : p.status === 'outOfStock' ? '#f8d7da' : '#d4edda'};" onchange="updatePurchaseStatus('${p.id}', this.value)">
+              <option value="pending" ${p.status === 'pending' ? 'selected' : ''}>未买</option>
+              <option value="outOfStock" ${p.status === 'outOfStock' ? 'selected' : ''}>缺货</option>
+              <option value="completed" ${p.status === 'completed' ? 'selected' : ''}>已买</option>
+            </select>
+            <button class="btn" style="background:#F56C6C; color:white; padding:4px 10px; font-size:12px; border-radius:4px;" onclick="deletePurchase('${p.id}')">删除</button>
+          </td>
+        </tr>
+      `;
+      }).join('');
+      
+      updatePurchaseSummary(purchases);
+    }
+
+    function updatePurchaseSummary(purchases) {
+      const totalCount = purchases.length;
+      const totalPrice = purchases.reduce((sum, p) => sum + (p.price * p.quantity), 0);
+      
+      document.getElementById('purchaseTotalCount').textContent = totalCount;
+      document.getElementById('purchaseTotalPrice').textContent = totalPrice.toFixed(2);
+    }
+
+    function searchPurchases() {
+      renderPurchases();
+    }
+
+    function toggleSelectAllPurchases() {
+      const checked = document.getElementById('selectAllPurchases').checked;
+      document.querySelectorAll('.purchase-checkbox').forEach(cb => cb.checked = checked);
+    }
+
+    function updatePurchaseStatus(purchaseId, status) {
+      let purchases = JSON.parse(localStorage.getItem(STORAGE_KEYS.PURCHASES) || '[]');
+      const purchase = purchases.find(p => p.id === purchaseId);
+      
+      if (!purchase) return;
+      
+      purchase.status = status;
+      localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
+      renderPurchases();
+    }
+
+    function deletePurchase(id) {
+      if (!confirm('确定要删除这个采购项吗？')) return;
+      
+      let purchases = JSON.parse(localStorage.getItem(STORAGE_KEYS.PURCHASES) || '[]');
+      purchases = purchases.filter(p => p.id !== id);
+      localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
+      renderPurchases();
+    }
+
+    function deleteAllPurchases() {
+      let purchases = JSON.parse(localStorage.getItem(STORAGE_KEYS.PURCHASES) || '[]');
+      
+      if (purchases.length === 0) {
+        alert('采购任务为空！');
+        return;
+      }
+      
+      if (!confirm(`确定要清空所有 ${purchases.length} 项采购任务吗？此操作不可恢复！`)) {
+        return;
+      }
+      
+      localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify([]));
+      renderPurchases();
+      alert('已清空所有采购任务！');
+    }
+
+    function completeTodayPurchases() {
+      let purchases = JSON.parse(localStorage.getItem(STORAGE_KEYS.PURCHASES) || '[]');
+      
+      if (purchases.length === 0) {
+        alert('采购任务为空！');
+        return;
+      }
+      
+      const completedPurchases = purchases.filter(p => p.status === 'completed');
+      const notCompleted = purchases.filter(p => p.status !== 'completed');
+      
+      if (completedPurchases.length === 0) {
+        alert('没有已买状态的采购项可完成！');
+        return;
+      }
+      
+      if (notCompleted.length > 0) {
+        const pendingCount = notCompleted.filter(p => p.status === 'pending').length;
+        const outOfStockCount = notCompleted.filter(p => p.status === 'outOfStock').length;
+        
+        if (!confirm(`当前有 ${completedPurchases.length} 项已买，${notCompleted.length} 项未完成（未买：${pendingCount}，缺货：${outOfStockCount}）。\n\n确定只完成已买的采购项吗？未完成的将保留在采购任务中。`)) {
+          return;
+        }
+      }
+      
+      completedPurchases.forEach(purchase => {
+        addPurchaseHistory(purchase);
+      });
+      
+      purchases = purchases.filter(p => p.status !== 'completed');
+      localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
+      
+      renderPurchases();
+      alert(`已完成 ${completedPurchases.length} 项采购！已记录到历史采购，${notCompleted.length} 项未完成的已保留。`);
+    }
+
+    function addPurchaseHistory(purchase) {
+      let history = JSON.parse(localStorage.getItem(STORAGE_KEYS.PURCHASE_HISTORY) || '[]');
+      const historyId = 'H-' + Date.now();
+      
+      history.push({
+        id: historyId,
+        purchaseId: purchase.id,
+        name: purchase.name,
+        quantity: purchase.quantity,
+        price: purchase.price,
+        totalAmount: (purchase.quantity * purchase.price).toFixed(2),
+        purchaseDate: new Date().toLocaleString(),
+        note: purchase.note
+      });
+      
+      localStorage.setItem(STORAGE_KEYS.PURCHASE_HISTORY, JSON.stringify(history));
+    }
+
+    function renderPurchaseHistory(filteredData) {
+      let history = filteredData || JSON.parse(localStorage.getItem(STORAGE_KEYS.PURCHASE_HISTORY) || '[]');
+      
+      history.sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
+      
+      const tbody = document.getElementById('purchaseHistoryTable');
+      
+      if (history.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">暂无历史采购记录</td></tr>';
+        updateHistorySummary([]);
+        return;
+      }
+      
+      tbody.innerHTML = history.map((h, index) => `
+        <tr style="background:${index % 2 === 0 ? '#ffffff' : '#fafafa'};">
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${h.id}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${h.purchaseDate}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${h.name}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${h.quantity}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; color:#67C23A; font-weight:bold;">¥${h.totalAmount}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; color:#999; font-size:13px;">${h.note || '-'}</td>
+        </tr>
+      `).join('');
+      
+      updateHistorySummary(history);
+    }
+
+    function updateHistorySummary(history) {
+      const totalCount = history.length;
+      const totalAmount = history.reduce((sum, h) => sum + parseFloat(h.totalAmount), 0);
+      
+      document.getElementById('historyTotalCount').textContent = totalCount;
+      document.getElementById('historyTotalAmount').textContent = totalAmount.toFixed(2);
+    }
+
+    function filterPurchaseHistory() {
+      const period = document.getElementById('historyPeriod').value;
+      let history = JSON.parse(localStorage.getItem(STORAGE_KEYS.PURCHASE_HISTORY) || '[]');
+      
+      const today = new Date();
+      let filtered = history;
+      
+      switch (period) {
+        case 'today':
+          filtered = history.filter(h => {
+            const hDate = new Date(h.purchaseDate);
+            return hDate.toDateString() === today.toDateString();
+          });
+          break;
+        case '3days':
+          filtered = history.filter(h => {
+            const hDate = new Date(h.purchaseDate);
+            const diffDays = Math.floor((today - hDate) / (1000 * 60 * 60 * 24));
+            return diffDays <= 3;
+          });
+          break;
+        case '7days':
+          filtered = history.filter(h => {
+            const hDate = new Date(h.purchaseDate);
+            const diffDays = Math.floor((today - hDate) / (1000 * 60 * 60 * 24));
+            return diffDays <= 7;
+          });
+          break;
+        case '15days':
+          filtered = history.filter(h => {
+            const hDate = new Date(h.purchaseDate);
+            const diffDays = Math.floor((today - hDate) / (1000 * 60 * 60 * 24));
+            return diffDays <= 15;
+          });
+          break;
+        case 'month':
+          filtered = history.filter(h => {
+            const hDate = new Date(h.purchaseDate);
+            return hDate.getMonth() === today.getMonth() && hDate.getFullYear() === today.getFullYear();
+          });
+          break;
+      }
+      
+      renderPurchaseHistory(filtered);
+    }
+
+    function clearHistoryFilter() {
+      document.getElementById('historyPeriod').value = 'all';
+      renderPurchaseHistory();
+    }
+
+    function clearAllPurchaseHistory() {
+      let history = JSON.parse(localStorage.getItem(STORAGE_KEYS.PURCHASE_HISTORY) || '[]');
+      
+      if (history.length === 0) {
+        alert('历史采购清单为空！');
+        return;
+      }
+      
+      if (!confirm(`确定要清空所有 ${history.length} 条历史采购记录吗？此操作不可恢复！`)) {
+        return;
+      }
+      
+      localStorage.setItem(STORAGE_KEYS.PURCHASE_HISTORY, JSON.stringify([]));
+      renderPurchaseHistory();
+      alert('已清空所有历史采购记录！');
+    }
+
+    function showAddCustomerModal() {
+      document.getElementById('customerName').value = '';
+      document.getElementById('customerName').dataset.id = '';
+      document.getElementById('customerPhone').value = '';
+      document.getElementById('customerEmail').value = '';
+      document.getElementById('customerWechat').value = '';
+      document.getElementById('customerCompany').value = '';
+      document.getElementById('customerAddress').value = '';
+      document.getElementById('customerNote').value = '';
+      document.getElementById('addCustomerModal').style.display = 'flex';
+    }
+
+    function closeAddCustomerModal() {
+      document.getElementById('addCustomerModal').style.display = 'none';
+    }
+
+    function saveCustomer() {
+      const name = document.getElementById('customerName').value.trim();
+      const phone = document.getElementById('customerPhone').value.trim();
+      const email = document.getElementById('customerEmail').value.trim();
+      const wechat = document.getElementById('customerWechat').value.trim();
+      const company = document.getElementById('customerCompany').value.trim();
+      const address = document.getElementById('customerAddress').value.trim();
+      const note = document.getElementById('customerNote').value.trim();
+      const editId = document.getElementById('customerName').dataset.id;
+      
+      if (!name) {
+        alert('请输入客户姓名！');
+        return;
+      }
+      
+      let customers = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOMERS) || '[]');
+      
+      if (editId) {
+        const index = customers.findIndex(c => c.id === editId);
+        if (index !== -1) {
+          customers[index] = {
+            ...customers[index],
+            name,
+            phone: phone || '-',
+            email: email || '-',
+            wechat: wechat || '-',
+            company: company || '-',
+            address: address || '-',
+            note: note || '-'
+          };
+        }
+      } else {
+        const maxId = Math.max(...customers.map(c => parseInt(c.id.split('-')[1]) || 0), 0);
+        const customerId = 'C-' + (maxId + 1);
+        customers.push({
+          id: customerId,
+          name,
+          phone: phone || '-',
+          email: email || '-',
+          wechat: wechat || '-',
+          company: company || '-',
+          address: address || '-',
+          note: note || '-',
+          createdAt: new Date().toLocaleString()
+        });
+      }
+      
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+      closeAddCustomerModal();
+      renderCustomers();
+      alert(editId ? '客户信息更新成功！' : '客户添加成功！');
+    }
+
+    function renderCustomers() {
+      const customers = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOMERS) || '[]');
+      const tbody = document.getElementById('customersTable');
+      
+      if (customers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="padding:30px; text-align:center; color:#999;">暂无客户数据</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = customers.map((c, index) => `
+        <tr style="background:${index % 2 === 0 ? '#ffffff' : '#fafafa'};">
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; color:#666;">${c.id}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; font-weight:bold;">${c.name}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${c.phone}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${c.email}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${c.wechat}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${c.company}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee;">${c.address || '-'}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; color:#999; font-size:13px;">${c.note}</td>
+          <td style="padding:12px 15px; border-bottom:1px solid #eee; display:flex; gap:5px;">
+            <button class="btn" style="background:#409EFF; color:white; padding:4px 10px; font-size:12px; border-radius:4px;" onclick="editCustomer('${c.id}')">编辑</button>
+            <button class="btn" style="background:#F56C6C; color:white; padding:4px 10px; font-size:12px; border-radius:4px;" onclick="deleteCustomer('${c.id}')">删除</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function editCustomer(id) {
+      const customers = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOMERS) || '[]');
+      const customer = customers.find(c => c.id === id);
+      
+      if (customer) {
+        document.getElementById('customerName').value = customer.name;
+        document.getElementById('customerName').dataset.id = id;
+        document.getElementById('customerPhone').value = customer.phone;
+        document.getElementById('customerEmail').value = customer.email;
+        document.getElementById('customerWechat').value = customer.wechat;
+        document.getElementById('customerCompany').value = customer.company;
+        document.getElementById('customerAddress').value = customer.address || '';
+        document.getElementById('customerNote').value = customer.note;
+        document.getElementById('addCustomerModal').style.display = 'flex';
+      }
+    }
+
+    function deleteCustomer(id) {
+      if (!confirm('确定要删除这个客户吗？')) return;
+      
+      let customers = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOMERS) || '[]');
+      customers = customers.filter(c => c.id !== id);
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+      renderCustomers();
+      alert('删除成功！');
+    }
+
+    initData();
+    renderIngredients();
+  </script>
+</body>
+</html>

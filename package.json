@@ -1,0 +1,14 @@
+{
+  "name": "purchasing-system",
+  "version": "1.0.0",
+  "description": "采购系统 - 包含客户端、服务端和商家端",
+  "scripts": {
+    "start:server": "cd server && npm start",
+    "start:client": "cd client && npm run serve",
+    "start:merchant": "cd merchant && npm run serve",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install && cd ../merchant && npm install"
+  },
+  "keywords": ["采购", "系统", "client", "server", "merchant"],
+  "author": "",
+  "license": "ISC"
+}

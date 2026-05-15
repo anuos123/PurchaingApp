@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>采购系统 - 后台管理</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Microsoft YaHei', sans-serif; background: #f5f5f5; }
+    .header { background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 20px; }
+    .user-info { display: flex; align-items: center; gap: 15px; }
+    .user-info span { font-size: 14px; }
+    .container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+    .card { background: white; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+    .card-header { background: #ecf0f1; padding: 15px 20px; font-weight: bold; font-size: 16px; border-bottom: 1px solid #ddd; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 20px; }
+    .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; padding: 20px; text-align: center; }
+    .stat-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .stat-card.orange { background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); }
+    .stat-card.red { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
+    .stat-card.blue { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); }
+    .stat-card.purple { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); }
+    .stat-value { font-size: 28px; font-weight: bold; }
+    .stat-label { font-size: 14px; opacity: 0.9; margin-top: 5px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background: #f8f9fa; font-weight: bold; }
+    tr:hover { background: #f5f5f5; }
+    .period-tabs { display: flex; gap: 10px; padding: 20px 20px 0; }
+    .period-tab { padding: 8px 20px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: white; }
+    .period-tab.active { background: #409EFF; color: white; border-color: #409EFF; }
+    .tab-content { padding: 20px; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 8px; width: 400px; max-width: 90%; }
+    .modal-header { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; font-weight: bold; }
+    .form-group { padding: 15px 20px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    .modal-footer { padding: 15px 20px; border-top: 1px solid #ddd; display: flex; gap: 10px; justify-content: flex-end; }
+    .btn { padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    .btn-primary { background: #409EFF; color: white; }
+    .btn-success { background: #67C23A; color: white; }
+    .btn-danger { background: #F56C6C; color: white; }
+    .btn-secondary { background: #909399; color: white; }
+    .login-container { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+    .login-card { width: 400px; }
+    .login-header { background: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .login-body { padding: 30px; }
+    .login-footer { padding: 20px; text-align: center; border-top: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>采购系统 - 后台管理中心 <span style="font-size:14px; color:#666; font-weight:normal;">v1.08</span></h1>
+    <div class="user-info">
+      <span id="userName">管理员</span>
+      <button class="btn btn-secondary" onclick="logout()">退出</button>
+    </div>
+  </div>
+
+  <div id="loginView" class="login-container">
+    <div class="card login-card">
+      <div class="login-header">
+        <h2>后台管理员登录</h2>
+      </div>
+      <div class="login-body">
+        <div class="form-group">
+          <label>管理员账号</label>
+          <input type="text" id="loginUsername" placeholder="请输入管理员账号">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="loginPassword" placeholder="请输入密码">
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="login()">登录</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mainView" style="display:none;">
+    <div class="container">
+      <div class="card">
+        <div class="card-header">系统概览</div>
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-value" id="statTotalUsers">0</div>
+            <div class="stat-label">总用户数</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-value" id="statTotalMerchants">0</div>
+            <div class="stat-label">总商家数</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-value" id="statTotalOrders">0</div>
+            <div class="stat-label">总订单数</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-value" id="statTotalAmount">¥0</div>
+            <div class="stat-label">总交易额</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-value" id="statTotalProducts">0</div>
+            <div class="stat-label">商品总数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statPendingOrders">0</div>
+            <div class="stat-label">待处理订单</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">财务统计</div>
+        <div class="period-tabs">
+          <div class="period-tab active" onclick="setPeriod('day')">今日</div>
+          <div class="period-tab" onclick="setPeriod('week')">本周</div>
+          <div class="period-tab" onclick="setPeriod('month')">本月</div>
+          <div class="period-tab" onclick="setPeriod('all')">全部</div>
+        </div>
+        <div class="tab-content">
+          <div class="stats-grid" style="padding:0;">
+            <div class="stat-card blue">
+              <div class="stat-value" id="statPeriodSales">¥0</div>
+              <div class="stat-label">销售总额</div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-value" id="statPeriodCompleted">¥0</div>
+              <div class="stat-label">已完成交易</div>
+            </div>
+            <div class="stat-card orange">
+              <div class="stat-value" id="statPeriodPending">¥0</div>
+              <div class="stat-label">待处理交易</div>
+            </div>
+            <div class="stat-card red">
+              <div class="stat-value" id="statPeriodOrders">0</div>
+              <div class="stat-label">订单数量</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">客户端用户管理</div>
+        <table>
+          <thead>
+            <tr><th>用户ID</th><th>姓名</th><th>邮箱</th><th>注册时间</th><th>订单数</th><th>消费总额</th></tr>
+          </thead>
+          <tbody id="usersTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">商家端管理</div>
+        <table>
+          <thead>
+            <tr><th>商家ID</th><th>商家名称</th><th>邮箱</th><th>注册时间</th><th>商品数</th><th>订单数</th><th>销售额</th></tr>
+          </thead>
+          <tbody id="merchantsTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">订单记录</div>
+        <table>
+          <thead>
+            <tr><th>订单编号</th><th>买家ID</th><th>买家姓名</th><th>商品信息</th><th>总金额</th><th>状态</th><th>下单时间</th></tr>
+          </thead>
+          <tbody id="ordersTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">商品管理</div>
+        <table>
+          <thead>
+            <tr><th>商品ID</th><th>商品名称</th><th>分类</th><th>价格</th><th>库存</th><th>商家</th></tr>
+          </thead>
+          <tbody id="productsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+    let currentPeriod = 'day';
+    let adminLoggedIn = false;
+
+    function login() {
+      const username = document.getElementById('loginUsername').value;
+      const password = document.getElementById('loginPassword').value;
+      
+      if (username === 'admin' && password === 'admin123') {
+        adminLoggedIn = true;
+        localStorage.setItem('purchasing_admin_logged', 'true');
+        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('mainView').style.display = 'block';
+        loadAllData();
+      } else {
+        alert('管理员账号或密码错误！');
+      }
+    }
+
+    function logout() {
+      adminLoggedIn = false;
+      localStorage.removeItem('purchasing_admin_logged');
+      document.getElementById('loginUsername').value = '';
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('loginView').style.display = 'flex';
+      document.getElementById('mainView').style.display = 'none';
+    }
+
+    function checkAdminLogin() {
+      if (localStorage.getItem('purchasing_admin_logged') === 'true') {
+        adminLoggedIn = true;
+        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('mainView').style.display = 'block';
+        loadAllData();
+      }
+    }
+
+    function loadAllData() {
+      loadSystemStats();
+      renderFinanceStats();
+      renderUsersTable();
+      renderMerchantsTable();
+      renderOrdersTable();
+      renderProductsTable();
+    }
+
+    function loadSystemStats() {
+      const users = JSON.parse(localStorage.getItem('purchasing_users') || '[]');
+      const merchants = JSON.parse(localStorage.getItem('purchasing_merchants') || '[]');
+      const orders = JSON.parse(localStorage.getItem('purchasing_orders') || '[]');
+      const products = JSON.parse(localStorage.getItem('purchasing_products') || '[]');
+      
+      document.getElementById('statTotalUsers').textContent = users.length;
+      document.getElementById('statTotalMerchants').textContent = merchants.length;
+      document.getElementById('statTotalOrders').textContent = orders.length;
+      
+      const totalAmount = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      document.getElementById('statTotalAmount').textContent = '¥' + totalAmount;
+      document.getElementById('statTotalProducts').textContent = products.length;
+      
+      const pendingOrders = orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length;
+      document.getElementById('statPendingOrders').textContent = pendingOrders;
+    }
+
+    function setPeriod(period) {
+      currentPeriod = period;
+      document.querySelectorAll('.period-tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelector(`.period-tab[onclick="setPeriod('${period}')"]`).classList.add('active');
+      renderFinanceStats();
+    }
+
+    function getDateRange(period) {
+      const now = new Date();
+      let start, end;
+      
+      switch(period) {
+        case 'day':
+          start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+          break;
+        case 'week':
+          const dayOfWeek = now.getDay() || 7;
+          start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1);
+          end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          start = new Date(now.getFullYear(), now.getMonth(), 1);
+          end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+          break;
+        case 'all':
+          start = new Date(0);
+          end = new Date(now.getFullYear() + 10, 12, 31);
+          break;
+        default:
+          start = now;
+          end = now;
+      }
+      return { start, end };
+    }
+
+    function renderFinanceStats() {
+      const orders = JSON.parse(localStorage.getItem('purchasing_orders') || '[]');
+      const { start, end } = getDateRange(currentPeriod);
+      
+      const filteredOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAt.replace(/\//g, '-'));
+        return orderDate >= start && orderDate < end;
+      });
+      
+      const totalSales = filteredOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+      const completedAmount = filteredOrders
+        .filter(order => order.status === 'completed')
+        .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+      const pendingAmount = filteredOrders
+        .filter(order => order.status !== 'completed' && order.status !== 'cancelled')
+        .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+      
+      document.getElementById('statPeriodSales').textContent = '¥' + totalSales;
+      document.getElementById('statPeriodCompleted').textContent = '¥' + completedAmount;
+      document.getElementById('statPeriodPending').textContent = '¥' + pendingAmount;
+      document.getElementById('statPeriodOrders').textContent = filteredOrders.length;
+    }
+
+    function renderUsersTable() {
+      const users = JSON.parse(localStorage.getItem('purchasing_users') || '[]');
+      const orders = JSON.parse(localStorage.getItem('purchasing_orders') || '[]');
+      
+      const tbody = document.getElementById('usersTable');
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">暂无用户数据</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = users.map(user => {
+        const userOrders = orders.filter(o => o.userId === user.id || o.buyer === user.name);
+        const orderCount = userOrders.length;
+        const totalSpent = userOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+        const regTime = user.regTime || new Date().toLocaleString();
+        return `<tr>
+          <td>${user.id}</td>
+          <td>${user.name}</td>
+          <td>${user.email}</td>
+          <td>${regTime}</td>
+          <td>${orderCount}</td>
+          <td>¥${totalSpent}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderMerchantsTable() {
+      const merchants = JSON.parse(localStorage.getItem('purchasing_merchants') || '[]');
+      const products = JSON.parse(localStorage.getItem('purchasing_products') || '[]');
+      const orders = JSON.parse(localStorage.getItem('purchasing_orders') || '[]');
+      
+      const tbody = document.getElementById('merchantsTable');
+      if (merchants.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;">暂无商家数据</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = merchants.map(merchant => {
+        const merchantProducts = products.filter(p => p.merchant === merchant.name);
+        const productCount = merchantProducts.length;
+        const merchantOrders = orders.filter(o => o.merchantId === merchant.id);
+        const orderCount = merchantOrders.length;
+        const totalSales = merchantOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+        const regTime = merchant.regTime || new Date().toLocaleString();
+        return `<tr>
+          <td>${merchant.id}</td>
+          <td>${merchant.name}</td>
+          <td>${merchant.email}</td>
+          <td>${regTime}</td>
+          <td>${productCount}</td>
+          <td>${orderCount}</td>
+          <td>¥${totalSales}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderOrdersTable() {
+      const orders = JSON.parse(localStorage.getItem('purchasing_orders') || '[]');
+      const users = JSON.parse(localStorage.getItem('purchasing_users') || '[]');
+      
+      const tbody = document.getElementById('ordersTable');
+      if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;">暂无订单数据</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = orders.map(order => {
+        const user = users.find(u => u.id === order.userId || u.name === order.buyer);
+        const userId = user ? user.id : '-';
+        const buyerName = order.buyer || '-';
+        const productsInfo = order.products ? order.products.map(p => `${p.name} x${p.quantity}`).join(', ') : '-';
+        const statusText = { pending: '待处理', confirmed: '已确认', shipped: '已发货', completed: '已完成', cancelled: '已取消' };
+        return `<tr>
+          <td>${order.id}</td>
+          <td>${userId}</td>
+          <td>${buyerName}</td>
+          <td>${productsInfo}</td>
+          <td>¥${order.totalAmount || 0}</td>
+          <td>${statusText[order.status] || order.status}</td>
+          <td>${order.createdAt}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderProductsTable() {
+      const products = JSON.parse(localStorage.getItem('purchasing_products') || '[]');
+      
+      const tbody = document.getElementById('productsTable');
+      if (products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">暂无商品数据</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = products.map(product => {
+        return `<tr>
+          <td>${product.id}</td>
+          <td>${product.name}</td>
+          <td>${product.category}</td>
+          <td>¥${product.price}</td>
+          <td>${product.stock}</td>
+          <td>${product.merchant}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    window.addEventListener('storage', (e) => {
+      if (adminLoggedIn) {
+        loadAllData();
+      }
+    });
+
+    window.addEventListener('load', () => {
+      checkAdminLogin();
+    });
+  </script>
+</body>
+</html>

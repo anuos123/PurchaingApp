@@ -1,0 +1,83 @@
+.container {
+  padding: 15px;
+  padding-bottom: 80px;
+}
+
+.table-container {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex;
+  background: #f8f9fa;
+  font-weight: bold;
+  font-size: 13px;
+  color: #333;
+}
+
+.table-row {
+  display: flex;
+  border-bottom: 1px solid #eee;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.th, .td {
+  padding: 12px 8px;
+  text-align: left;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.th:nth-child(1), .td:nth-child(1) { width: 15%; }
+.th:nth-child(2), .td:nth-child(2) { width: 15%; }
+.th:nth-child(3), .td:nth-child(3) { width: 18%; }
+.th:nth-child(4), .td:nth-child(4) { width: 20%; }
+.th:nth-child(5), .td:nth-child(5) { width: 12%; }
+.th:nth-child(6), .td:nth-child(6) { width: 20%; text-align: center; }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  width: 90%;
+  max-width: 400px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 15px;
+  background: #67C23A;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.modal-body {
+  padding: 15px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 15px;
+  border-top: 1px solid #eee;
+}

@@ -1,0 +1,127 @@
+<view class="container">
+  <view class="card">
+    <view class="card-header">
+      <text>采购任务</text>
+      <view style="display: flex; gap: 10px;">
+        <button class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" bindtap="showSelectModal">添加采购</button>
+        <button class="btn btn-success" style="font-size: 12px; padding: 6px 12px;" bindtap="completeTodayPurchases">完成今日采购</button>
+      </view>
+    </view>
+    
+    <view class="card-body">
+      <view style="text-align: right; margin-bottom: 15px; font-size: 14px;">
+        <span style="color: #666;">合计：</span>
+        <span style="color: #E6A23C; font-weight: bold; font-size: 18px;">¥{{totalAmount.toFixed(2)}}</span>
+        <button 
+          class="btn btn-danger" 
+          style="font-size: 11px; padding: 4px 8px; margin-left: 10px;" 
+          bindtap="clearAllPurchases"
+        >
+          一键清空
+        </button>
+      </view>
+      
+      <view wx:if="{{purchases.length === 0}}" class="empty-state">
+        😊 暂无采购任务，点击上方按钮添加
+      </view>
+      
+      <view wx:else>
+        <view class="table-container">
+          <view class="table-header">
+            <view class="th">食材名称</view>
+            <view class="th">数量</view>
+            <view class="th">单价</view>
+            <view class="th">总价</view>
+            <view class="th">备注</view>
+            <view class="th">状态</view>
+            <view class="th">操作</view>
+          </view>
+          <view class="table-body">
+            <view wx:for="{{purchases}}" wx:key="id" class="table-row">
+              <view class="td">{{item.name}}</view>
+              <view class="td">{{item.quantity}}</view>
+              <view class="td">¥{{item.price.toFixed(2)}}</view>
+              <view class="td" style="color: #67C23A; font-weight: bold;">¥{{(item.quantity * item.price).toFixed(2)}}</view>
+              <view class="td">{{item.note || '-'}}</view>
+              <view class="td">
+                <picker value="{{item.status}}" range="{{statusOptions.map(o => o.label)}}" bindchange="updateStatus" data-id="{{item.id}}">
+                  <view 
+                    class="status-picker" 
+                    style="background: {{statusOptions.find(o => o.value === item.status)?.color}}; padding: 4px 8px; border-radius: 4px;"
+                  >
+                    {{statusOptions.find(o => o.value === item.status)?.label}}
+                  </view>
+                </picker>
+              </view>
+              <view class="td">
+                <button class="btn btn-danger" style="font-size: 11px; padding: 4px 8px;" bindtap="deletePurchase" data-id="{{item.id}}">删除</button>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showSelectModal}}" class="modal-overlay" bindtap="closeSelectModal">
+    <view class="modal" style="width: 95%; max-height: 80vh;" catchtap="stopPropagation">
+      <view class="modal-header">选择食材添加到采购</view>
+      <view class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <view wx:if="{{availableIngredients.length === 0}}" class="empty-state">
+          😊 食材清单为空或所有食材已在采购任务中
+        </view>
+        <view wx:else>
+          <view wx:for="{{availableIngredients}}" wx:key="id" class="select-item">
+            <view class="select-header">
+              <view style="display: flex; align-items: center; gap: 10px;">
+                <checkbox value="{{item.selected}}" checked="{{item.selected}}" bindtap="toggleIngredient" data-index="{{index}}" />
+                <text style="font-weight: bold;">{{item.name}}</text>
+                <text style="background: #67C23A; color: white; font-size: 11px; padding: 2px 6px; border-radius: 8px;">{{item.category}}</text>
+              </view>
+              <text style="color: #E6A23C; font-weight: bold;">¥{{item.price.toFixed(2)}}</text>
+            </view>
+            <view class="select-body">
+              <view style="display: flex; gap: 15px; padding: 10px 0;">
+                <view>
+                  <text style="font-size: 12px; color: #666;">数量</text>
+                  <input type="number" value="{{item.quantity}}" bindinput="updateQuantity" data-index="{{index}}" style="width: 80px; margin-left: 10px;" />
+                </view>
+                <view>
+                  <text style="font-size: 12px; color: #666;">单价</text>
+                  <input type="digit" value="{{item.customPrice}}" bindinput="updatePrice" data-index="{{index}}" style="width: 80px; margin-left: 10px;" />
+                </view>
+                <view>
+                  <text style="font-size: 12px; color: #666;">小计</text>
+                  <text style="color: #67C23A; font-weight: bold; margin-left: 10px;">¥{{(item.quantity * item.customPrice).toFixed(2)}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="btn btn-default" bindtap="closeSelectModal">取消</button>
+        <button class="btn btn-primary" bindtap="addSelectedIngredients">确认添加</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="custom-tab-bar">
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/ingredients/ingredients">
+      <text class="tab-icon">🍅</text>
+      <text class="tab-text">食材清单</text>
+    </view>
+    <view class="tab-item active" bindtap="switchTab" data-url="/pages/purchase/purchase">
+      <text class="tab-icon">🛒</text>
+      <text class="tab-text">采购任务</text>
+    </view>
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/history/history">
+      <text class="tab-icon">📜</text>
+      <text class="tab-text">历史采购</text>
+    </view>
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/customers/customers">
+      <text class="tab-icon">👥</text>
+      <text class="tab-text">客户名单</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,130 @@
+<view class="container">
+  <view class="card">
+    <view class="card-header">
+      <text>食材清单</text>
+      <view style="display: flex; gap: 10px;">
+        <button class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" bindtap="showAddModal">添加食材</button>
+        <button class="btn btn-success" style="font-size: 12px; padding: 6px 12px;" bindtap="exportIngredients">导出</button>
+      </view>
+    </view>
+    
+    <view class="card-body">
+      <view class="filter-bar">
+        <input 
+          type="text" 
+          placeholder="搜索食材..." 
+          value="{{searchKeyword}}" 
+          bindinput="onSearchInput"
+          style="width: 200px;"
+        />
+        <picker value="{{categories.indexOf(selectedCategory)}}" range="{{['全部分类', ...categories]}}" bindchange="onCategoryChange">
+          <view class="picker">
+            {{selectedCategory || '全部分类'}}
+          </view>
+        </picker>
+        <button class="btn btn-default" style="font-size: 12px; padding: 6px 12px;" bindtap="clearFilter">清除筛选</button>
+      </view>
+      
+      <view wx:if="{{filterResult}}" class="filter-result">
+        {{filterResult}}
+      </view>
+      
+      <view wx:if="{{ingredients.length === 0}}" class="empty-state">
+        😔 没有找到匹配的食材
+      </view>
+      
+      <view wx:else class="grid">
+        <view 
+          wx:for="{{ingredients}}" 
+          wx:key="id" 
+          class="grid-item"
+          style="border: 1px solid #eee; border-radius: 8px; padding: 15px;"
+        >
+          <view style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <text class="name">{{item.name}}</text>
+            <text 
+              class="category" 
+              style="background: {{categoryColors[item.category]}}; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px;"
+            >
+              {{item.category}}
+            </text>
+          </view>
+          <text class="info">规格：{{item.spec}}</text>
+          <text class="price">¥{{item.price.toFixed(2)}}</text>
+          <text wx:if="{{item.note && item.note !== '-'}}" class="info" style="color: #999; font-size: 12px;">备注：{{item.note}}</text>
+          <view class="actions">
+            <button 
+              style="background: #409EFF; color: white;" 
+              bindtap="showEditModal" 
+              data-id="{{item.id}}"
+            >
+              编辑
+            </button>
+            <button 
+              style="background: #F56C6C; color: white;" 
+              bindtap="deleteIngredient" 
+              data-id="{{item.id}}"
+            >
+              删除
+            </button>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="custom-tab-bar">
+    <view class="tab-item active" bindtap="switchTab" data-url="/pages/ingredients/ingredients">
+      <text class="tab-icon">🍅</text>
+      <text class="tab-text">食材清单</text>
+    </view>
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/purchase/purchase">
+      <text class="tab-icon">🛒</text>
+      <text class="tab-text">采购任务</text>
+    </view>
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/history/history">
+      <text class="tab-icon">📜</text>
+      <text class="tab-text">历史采购</text>
+    </view>
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/customers/customers">
+      <text class="tab-icon">👥</text>
+      <text class="tab-text">客户名单</text>
+    </view>
+  </view>
+
+  <view wx:if="{{showModal}}" class="modal-overlay" bindtap="closeModal">
+    <view class="modal" catchtap="stopPropagation">
+      <view class="modal-header">{{modalTitle}}</view>
+      <view class="modal-body">
+        <view class="form-group">
+          <label>食材名称</label>
+          <input type="text" value="{{formData.name}}" bindinput="onFormInput" data-field="name" placeholder="请输入食材名称" />
+        </view>
+        <view class="form-group">
+          <label>分类</label>
+          <picker value="{{categories.indexOf(formData.category)}}" range="{{categories}}" bindchange="onCategoryChange">
+            <view class="picker">
+              {{formData.category}}
+            </view>
+          </picker>
+        </view>
+        <view class="form-group">
+          <label>规格</label>
+          <input type="text" value="{{formData.spec}}" bindinput="onFormInput" data-field="spec" placeholder="例如：500g/份" />
+        </view>
+        <view class="form-group">
+          <label>预估单价</label>
+          <input type="number" value="{{formData.price}}" bindinput="onFormInput" data-field="price" placeholder="请输入预估单价" />
+        </view>
+        <view class="form-group">
+          <label>备注</label>
+          <textarea value="{{formData.note}}" bindinput="onFormInput" data-field="note" placeholder="请输入备注信息" />
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="btn btn-default" bindtap="closeModal">取消</button>
+        <button class="btn btn-primary" bindtap="saveIngredient">保存</button>
+      </view>
+    </view>
+  </view>
+</view>

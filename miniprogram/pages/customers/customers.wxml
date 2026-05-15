@@ -1,0 +1,109 @@
+<view class="container">
+  <view class="card">
+    <view class="card-header">
+      <text>客户名单</text>
+      <button class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" bindtap="showAddModal">添加客户</button>
+    </view>
+    
+    <view class="card-body">
+      <view class="filter-bar">
+        <input 
+          type="text" 
+          placeholder="搜索客户姓名/电话/公司..." 
+          value="{{searchKeyword}}" 
+          bindinput="onSearchInput"
+          style="width: 250px;"
+        />
+      </view>
+      
+      <view wx:if="{{filteredCustomers.length === 0}}" class="empty-state">
+        😊 暂无客户记录
+      </view>
+      
+      <view wx:else>
+        <view class="table-container">
+          <view class="table-header">
+            <view class="th">客户姓名</view>
+            <view class="th">联系电话</view>
+            <view class="th">公司</view>
+            <view class="th">地址</view>
+            <view class="th">微信</view>
+            <view class="th">操作</view>
+          </view>
+          <view class="table-body">
+            <view wx:for="{{filteredCustomers}}" wx:key="id" class="table-row">
+              <view class="td">{{item.name}}</view>
+              <view class="td">{{item.phone || '-'}}</view>
+              <view class="td">{{item.company || '-'}}</view>
+              <view class="td">{{item.address || '-'}}</view>
+              <view class="td">{{item.wechat || '-'}}</view>
+              <view class="td">
+                <button class="btn btn-success" style="font-size: 11px; padding: 4px 8px; margin-right: 5px;" bindtap="showEditModal" data-id="{{item.id}}">编辑</button>
+                <button class="btn btn-danger" style="font-size: 11px; padding: 4px 8px;" bindtap="deleteCustomer" data-id="{{item.id}}">删除</button>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="custom-tab-bar">
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/ingredients/ingredients">
+      <text class="tab-icon">🍅</text>
+      <text class="tab-text">食材清单</text>
+    </view>
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/purchase/purchase">
+      <text class="tab-icon">🛒</text>
+      <text class="tab-text">采购任务</text>
+    </view>
+    <view class="tab-item" bindtap="switchTab" data-url="/pages/history/history">
+      <text class="tab-icon">📜</text>
+      <text class="tab-text">历史采购</text>
+    </view>
+    <view class="tab-item active" bindtap="switchTab" data-url="/pages/customers/customers">
+      <text class="tab-icon">👥</text>
+      <text class="tab-text">客户名单</text>
+    </view>
+  </view>
+
+  <view wx:if="{{showModal}}" class="modal-overlay" bindtap="closeModal">
+    <view class="modal" catchtap="stopPropagation">
+      <view class="modal-header">{{modalTitle}}</view>
+      <view class="modal-body">
+        <view class="form-group">
+          <label>客户姓名</label>
+          <input type="text" value="{{formData.name}}" bindinput="onFormInput" data-field="name" placeholder="请输入客户姓名" />
+        </view>
+        <view class="form-group">
+          <label>联系电话</label>
+          <input type="number" value="{{formData.phone}}" bindinput="onFormInput" data-field="phone" placeholder="请输入联系电话" />
+        </view>
+        <view class="form-group">
+          <label>电子邮箱</label>
+          <input type="text" value="{{formData.email}}" bindinput="onFormInput" data-field="email" placeholder="请输入电子邮箱" />
+        </view>
+        <view class="form-group">
+          <label>微信号/QQ</label>
+          <input type="text" value="{{formData.wechat}}" bindinput="onFormInput" data-field="wechat" placeholder="请输入微信号或QQ" />
+        </view>
+        <view class="form-group">
+          <label>公司名称</label>
+          <input type="text" value="{{formData.company}}" bindinput="onFormInput" data-field="company" placeholder="请输入公司名称" />
+        </view>
+        <view class="form-group">
+          <label>单位地址</label>
+          <textarea value="{{formData.address}}" bindinput="onFormInput" data-field="address" placeholder="请输入单位地址" />
+        </view>
+        <view class="form-group">
+          <label>备注</label>
+          <textarea value="{{formData.note}}" bindinput="onFormInput" data-field="note" placeholder="请输入备注信息" />
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="btn btn-default" bindtap="closeModal">取消</button>
+        <button class="btn btn-primary" bindtap="saveCustomer">保存</button>
+      </view>
+    </view>
+  </view>
+</view>
