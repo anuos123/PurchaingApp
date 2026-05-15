@@ -8,6 +8,9 @@
     "start:merchant": "cd merchant && npm run serve",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install && cd ../merchant && npm install"
   },
+  "dependencies": {
+    "serverless-http": "^3.2.0"
+  },
   "keywords": ["采购", "系统", "client", "server", "merchant"],
   "author": "",
   "license": "ISC"

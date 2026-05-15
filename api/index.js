@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const serverless = require('serverless-http');
 
 require('dotenv').config();
 
@@ -309,4 +310,4 @@ app.get('/', (req, res) => {
   res.send('采购系统服务端运行中...');
 });
 
-module.exports = app;
+module.exports.handler = serverless(app);
