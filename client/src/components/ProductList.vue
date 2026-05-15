@@ -40,7 +40,7 @@ import axios from 'axios';
 
 const emit = defineEmits(['buy']);
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = '/api';
 const products = ref([]);
 const showBuyModal = ref(false);
 const selectedProduct = ref(null);
