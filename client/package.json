@@ -4,7 +4,8 @@
   "description": "采购系统客户端",
   "scripts": {
     "serve": "vue-cli-service serve --port 8080",
-    "build": "vue-cli-service build"
+    "build": "vue-cli-service build",
+    "vercel-build": "npm install && npm run build"
   },
   "dependencies": {
     "vue": "^3.3.4",
