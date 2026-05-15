@@ -20,12 +20,24 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/",
+      "dest": "/client/dist/index.html"
+    },
+    {
       "src": "/index.html",
       "dest": "/client/dist/index.html"
     },
     {
-      "src": "/",
-      "dest": "/client/dist/index.html"
+      "src": "/assets/(.*)",
+      "dest": "/client/dist/assets/$1"
+    },
+    {
+      "src": "/css/(.*)",
+      "dest": "/client/dist/css/$1"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "/client/dist/js/$1"
     },
     {
       "src": "/(.*)",
