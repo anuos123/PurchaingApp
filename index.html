@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>采购系统 - 首页</title>
-    <meta http-equiv="refresh" content="0;url=simple-client.html">
     <style>
         body {
             font-family: 'Microsoft YaHei', Arial, sans-serif;
@@ -23,8 +22,13 @@
             border-radius: 16px;
             backdrop-filter: blur(10px);
         }
-        h1 {
-            margin-bottom: 20px;
+        h1 { margin-bottom: 20px; }
+        .version {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-left: 10px;
         }
         a {
             color: #fff;
@@ -33,28 +37,66 @@
         }
         .links {
             margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
         .links a {
-            display: inline-block;
-            margin: 10px;
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.2);
+            display: block;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 8px;
             text-decoration: none;
+            transition: all 0.3s;
+        }
+        .links a:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        .badge {
+            background: #67C23A;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .badge-new {
+            background: #409EFF;
+        }
+        .description {
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🛒 采购系统</h1>
-        <p>正在跳转到客户端...</p>
-        <p>如果没有自动跳转，请 <a href="simple-client.html">点击这里</a></p>
-        
+        <p class="description">基于 Vue.js + Express + MongoDB 的采购管理平台</p>
+
         <div class="links">
-            <a href="simple-client.html">用户端</a>
-            <a href="simple-merchant.html">商家端</a>
-            <a href="simple-admin.html">管理后台</a>
-            <a href="ingredient-purchase-client.html">原料采购</a>
+            <a href="simple-client-supabase.html">
+                <strong>✅ 完整版（推荐）</strong>
+                <span class="badge badge-new">NEW</span>
+                <p class="description" style="margin:5px 0 0 0;font-size:12px;">支持用户注册、数据永久保存（需配置 Supabase）</p>
+            </a>
+            <a href="simple-client.html">
+                <strong>⚡ 轻量版</strong>
+                <p class="description" style="margin:5px 0 0 0;font-size:12px;">无需配置，数据存储在浏览器本地</p>
+            </a>
+            <a href="simple-merchant.html">
+                <strong>🏪 商家端</strong>
+                <p class="description" style="margin:5px 0 0 0;font-size:12px;">商家入驻、商品管理</p>
+            </a>
+            <a href="simple-admin.html">
+                <strong>👨‍💼 管理后台</strong>
+                <p class="description" style="margin:5px 0 0 0;font-size:12px;">系统管理、数据统计</p>
+            </a>
+        </div>
+
+        <div style="margin-top:40px;font-size:12px;opacity:0.7;">
+            <p>技术栈: Vue.js | Element Plus | Express | MongoDB</p>
+            <p style="margin-top:10px;">部署平台: GitHub Pages</p>
         </div>
     </div>
 </body>

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>采购系统 - 客户端 (Supabase版)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Microsoft YaHei', sans-serif; background: #f5f5f5; }
+    .header { background: #409EFF; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 20px; font-weight: bold; }
+    .nav { display: flex; gap: 20px; }
+    .nav a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; }
+    .nav a:hover { background: rgba(255,255,255,0.2); }
+    .nav a.active { background: rgba(255,255,255,0.3); }
+    .main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+    .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+    .card-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #333; }
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .product-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s; }
+    .product-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .product-image { height: 150px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; }
+    .product-image img { width: 100%; height: 100%; object-fit: cover; }
+    .product-info { padding: 15px; }
+    .product-name { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+    .product-desc { font-size: 12px; color: #666; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .product-price { font-size: 20px; color: #E6A23C; font-weight: bold; margin-bottom: 5px; }
+    .product-stock { font-size: 12px; color: #67C23A; margin-bottom: 10px; }
+    .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s; }
+    .btn-primary { background: #409EFF; color: white; }
+    .btn-primary:hover { background: #67B8FF; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-danger { background: #F56C6C; color: white; }
+    .btn-danger:hover { background: #F78989; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    .table { width: 100%; border-collapse: collapse; }
+    .table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+    .table th { background: #f8f9fa; font-weight: bold; }
+    .tag { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; }
+    .tag-warning { background: #fef08a; color: #854d0e; }
+    .tag-success { background: #bbf7d0; color: #166534; }
+    .tag-danger { background: #fecaca; color: #991b1b; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 8px; padding: 20px; width: 90%; max-width: 450px; }
+    .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .login-container { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+    .login-card { width: 400px; }
+    .user-info { display: flex; align-items: center; gap: 15px; }
+    .cart-badge { background: #F56C6C; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .auto-login-hint { font-size: 12px; color: #999; margin-top: 10px; }
+    .loading { text-align: center; padding: 20px; color: #999; }
+    .error { color: #F56C6C; padding: 10px; background: #fef0f0; border-radius: 4px; margin-bottom: 10px; }
+    .success { color: #67C23A; padding: 10px; background: #f0f9f0; border-radius: 4px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">采购系统 <span style="font-size:12px; color:#666; font-weight:normal;">v2.0 (Supabase)</span></div>
+    <div class="nav" id="nav">
+      <a href="#products" class="active" onclick="showTab('products')">商品列表</a>
+      <a href="#cart" onclick="showTab('cart')">购物车 <span class="cart-badge" id="cartBadge">0</span></a>
+      <a href="#orders" onclick="showTab('orders')">我的订单</a>
+    </div>
+    <div class="user-info" id="userInfo">
+      <span id="userName">未登录</span>
+      <button class="btn btn-primary" id="authBtn" onclick="showAuthModal()">登录</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="loginView" class="login-container">
+      <div class="card login-card">
+        <div class="card-header">用户登录</div>
+        <div id="loginError" class="error" style="display:none;"></div>
+        <div class="form-group">
+          <label>邮箱</label>
+          <input type="email" id="loginEmail" placeholder="请输入邮箱">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="loginPassword" placeholder="请输入密码" onkeypress="if(event.key==='Enter')login()">
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="login()">登录</button>
+        <div style="text-align:center;margin-top:15px;">
+          <a href="#" onclick="showRegisterModal();return false;">还没有账号？立即注册</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="productsView" style="display:none;">
+      <div class="card">
+        <div class="card-header">商品列表</div>
+        <div id="productsGrid" class="product-grid"></div>
+      </div>
+    </div>
+
+    <div id="cartView" style="display:none;">
+      <div class="card">
+        <div class="card-header">购物车</div>
+        <div id="cartItems"></div>
+        <div style="margin-top:20px;text-align:right;">
+          <strong>总计: ¥<span id="cartTotal">0.00</span></strong>
+          <button class="btn btn-primary" style="margin-left:20px;" onclick="placeOrder()">提交订单</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="ordersView" style="display:none;">
+      <div class="card">
+        <div class="card-header">我的订单</div>
+        <div id="ordersList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 注册模态框 -->
+  <div class="modal-overlay" id="registerModal">
+    <div class="modal">
+      <div class="modal-header">用户注册</div>
+      <div id="registerError" class="error" style="display:none;"></div>
+      <div class="form-group">
+        <label>姓名</label>
+        <input type="text" id="registerName" placeholder="请输入姓名">
+      </div>
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="registerEmail" placeholder="请输入邮箱">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="registerPassword" placeholder="请输入密码">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="register()">注册</button>
+        <button class="btn" onclick="closeRegisterModal()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading" id="loading" style="display:none;">加载中...</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ============================================
+    // Supabase 配置
+    // 请替换为您自己的配置
+    // ============================================
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+    // 初始化 Supabase 客户端
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ============================================
+    // 全局状态
+    // ============================================
+    let currentUser = null;
+    let products = [];
+    let cart = [];
+
+    // ============================================
+    // 初始化
+    // ============================================
+    async function init() {
+      showLoading(true);
+      await checkAuth();
+      await loadProducts();
+      showLoading(false);
+    }
+
+    // ============================================
+    // 认证相关
+    // ============================================
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        updateUserInfo();
+        document.getElementById('loginView').style.display = 'none';
+      }
+    }
+
+    async function login() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        showError('loginError', '请输入邮箱和密码');
+        return;
+      }
+
+      showLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      showLoading(false);
+
+      if (error) {
+        showError('loginError', error.message);
+        return;
+      }
+
+      currentUser = data.user;
+      updateUserInfo();
+      document.getElementById('loginView').style.display = 'none';
+      document.getElementById('loginPassword').value = '';
+    }
+
+    async function register() {
+      const name = document.getElementById('registerName').value.trim();
+      const email = document.getElementById('registerEmail').value.trim();
+      const password = document.getElementById('registerPassword').value;
+
+      if (!name || !email || !password) {
+        showError('registerError', '请填写所有字段');
+        return;
+      }
+
+      if (password.length < 6) {
+        showError('registerError', '密码至少6位');
+        return;
+      }
+
+      showLoading(true);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name
+          }
+        }
+      });
+
+      showLoading(false);
+
+      if (error) {
+        showError('registerError', error.message);
+        return;
+      }
+
+      // 直接登录
+      await login();
+      closeRegisterModal();
+      alert('注册成功！');
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      currentUser = null;
+      updateUserInfo();
+      document.getElementById('loginView').style.display = 'flex';
+      showTab('products');
+    }
+
+    // ============================================
+    // 商品相关
+    // ============================================
+    async function loadProducts() {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('加载商品失败:', error);
+        return;
+      }
+
+      products = data || [];
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('productsGrid');
+
+      if (products.length === 0) {
+        grid.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">暂无商品</p>';
+        return;
+      }
+
+      grid.innerHTML = products.map(p => `
+        <div class="product-card">
+          <div class="product-image">
+            <span style="font-size:48px;color:#ddd;">📦</span>
+          </div>
+          <div class="product-info">
+            <div class="product-name">${escapeHtml(p.name)}</div>
+            <div class="product-desc">${escapeHtml(p.description || '')}</div>
+            <div class="product-price">¥${p.price.toFixed(2)}</div>
+            <div class="product-stock">库存: ${p.stock}</div>
+            <button class="btn btn-primary" onclick="addToCart('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''}>
+              ${p.stock > 0 ? '加入购物车' : '缺货'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ============================================
+    // 购物车相关
+    // ============================================
+    function addToCart(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+
+      const existingItem = cart.find(item => item.productId === productId);
+      if (existingItem) {
+        if (existingItem.quantity < product.stock) {
+          existingItem.quantity++;
+        } else {
+          alert('库存不足');
+          return;
+        }
+      } else {
+        cart.push({
+          productId,
+          name: product.name,
+          price: product.price,
+          quantity: 1
+        });
+      }
+
+      updateCartBadge();
+      alert('已添加到购物车');
+    }
+
+    function updateCartBadge() {
+      document.getElementById('cartBadge').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+    }
+
+    function showCart() {
+      const container = document.getElementById('cartItems');
+
+      if (cart.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">购物车是空的</p>';
+        document.getElementById('cartTotal').textContent = '0.00';
+        return;
+      }
+
+      container.innerHTML = cart.map((item, index) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:15px;border-bottom:1px solid #eee;">
+          <div>
+            <strong>${escapeHtml(item.name)}</strong>
+            <div style="color:#666;font-size:12px;">¥${item.price.toFixed(2)} x ${item.quantity}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="btn" onclick="updateCartQuantity(${index}, -1)">-</button>
+            <span>${item.quantity}</span>
+            <button class="btn" onclick="updateCartQuantity(${index}, 1)">+</button>
+            <button class="btn btn-danger" onclick="removeFromCart(${index})">删除</button>
+          </div>
+        </div>
+      `).join('');
+
+      const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      document.getElementById('cartTotal').textContent = total.toFixed(2);
+    }
+
+    function updateCartQuantity(index, delta) {
+      cart[index].quantity += delta;
+      if (cart[index].quantity <= 0) {
+        cart.splice(index, 1);
+      }
+      updateCartBadge();
+      showCart();
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCartBadge();
+      showCart();
+    }
+
+    // ============================================
+    // 订单相关
+    // ============================================
+    async function placeOrder() {
+      if (!currentUser) {
+        alert('请先登录');
+        showAuthModal();
+        return;
+      }
+
+      if (cart.length === 0) {
+        alert('购物车是空的');
+        return;
+      }
+
+      const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+      showLoading(true);
+      const { error } = await supabase
+        .from('orders')
+        .insert({
+          user_id: currentUser.id,
+          items: cart,
+          total: total,
+          status: 'pending'
+        });
+
+      showLoading(false);
+
+      if (error) {
+        alert('下单失败: ' + error.message);
+        return;
+      }
+
+      alert('订单提交成功！');
+      cart = [];
+      updateCartBadge();
+      showTab('cart');
+    }
+
+    async function loadOrders() {
+      if (!currentUser) return;
+
+      showLoading(true);
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+      showLoading(false);
+
+      if (error) {
+        console.error('加载订单失败:', error);
+        return;
+      }
+
+      const container = document.getElementById('ordersList');
+
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">暂无订单</p>';
+        return;
+      }
+
+      container.innerHTML = data.map(order => `
+        <div style="border:1px solid #eee;border-radius:8px;padding:15px;margin-bottom:15px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <strong>订单 #${order.id.slice(0, 8)}</strong>
+            <span class="tag ${getStatusTagClass(order.status)}">${getStatusText(order.status)}</span>
+          </div>
+          <div style="color:#666;font-size:12px;margin-bottom:10px;">
+            ${new Date(order.created_at).toLocaleString('zh-CN')}
+          </div>
+          <div style="margin-bottom:10px;">
+            ${order.items.map(item => `
+              <div style="padding:5px 0;">
+                ${escapeHtml(item.name)} x ${item.quantity} - ¥${(item.price * item.quantity).toFixed(2)}
+              </div>
+            `).join('')}
+          </div>
+          <div style="text-align:right;font-size:18px;color:#E6A23C;">
+            总计: ¥${order.total.toFixed(2)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getStatusTagClass(status) {
+      const classes = {
+        'pending': 'tag-warning',
+        'processing': 'tag-primary',
+        'completed': 'tag-success',
+        'cancelled': 'tag-danger'
+      };
+      return classes[status] || 'tag-warning';
+    }
+
+    function getStatusText(status) {
+      const texts = {
+        'pending': '待处理',
+        'processing': '处理中',
+        'completed': '已完成',
+        'cancelled': '已取消'
+      };
+      return texts[status] || status;
+    }
+
+    // ============================================
+    // UI 辅助函数
+    // ============================================
+    function showTab(tab) {
+      document.getElementById('productsView').style.display = tab === 'products' ? 'block' : 'none';
+      document.getElementById('cartView').style.display = tab === 'cart' ? 'block' : 'none';
+      document.getElementById('ordersView').style.display = tab === 'orders' ? 'block' : 'none';
+
+      document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+      const activeLink = document.querySelector(`.nav a[href="#${tab}"]`);
+      if (activeLink) activeLink.classList.add('active');
+
+      if (tab === 'cart') showCart();
+      if (tab === 'orders') loadOrders();
+    }
+
+    function updateUserInfo() {
+      if (currentUser) {
+        document.getElementById('userName').textContent = currentUser.user_metadata?.name || currentUser.email;
+        document.getElementById('authBtn').textContent = '退出';
+        document.getElementById('authBtn').onclick = logout;
+      } else {
+        document.getElementById('userName').textContent = '未登录';
+        document.getElementById('authBtn').textContent = '登录';
+        document.getElementById('authBtn').onclick = showAuthModal;
+      }
+    }
+
+    function showAuthModal() {
+      document.getElementById('loginView').style.display = 'flex';
+    }
+
+    function showRegisterModal() {
+      document.getElementById('registerModal').classList.add('show');
+    }
+
+    function closeRegisterModal() {
+      document.getElementById('registerModal').classList.remove('show');
+    }
+
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'block' : 'none';
+    }
+
+    function showError(elementId, message) {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 5000);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 初始化应用
+    init();
+  </script>
+</body>
+</html>
