@@ -23,13 +23,6 @@
             backdrop-filter: blur(10px);
         }
         h1 { margin-bottom: 20px; }
-        .version {
-            background: rgba(255,255,255,0.2);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            margin-left: 10px;
-        }
         a {
             color: #fff;
             text-decoration: underline;
@@ -54,18 +47,32 @@
             transform: translateY(-2px);
         }
         .badge {
-            background: #67C23A;
             padding: 2px 8px;
             border-radius: 4px;
             font-size: 12px;
             margin-left: 10px;
         }
-        .badge-new {
+        .badge-mongo {
+            background: #4DB33D;
+        }
+        .badge-supabase {
             background: #409EFF;
+        }
+        .badge-local {
+            background: #E6A23C;
         }
         .description {
             color: rgba(255,255,255,0.8);
             margin-bottom: 10px;
+        }
+        .version-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+        .version-title {
+            font-size: 16px;
+            margin-bottom: 15px;
         }
     </style>
 </head>
@@ -74,28 +81,49 @@
         <h1>🛒 采购系统</h1>
         <p class="description">基于 Vue.js + Express + MongoDB 的采购管理平台</p>
 
-        <div class="links">
-            <a href="simple-client-supabase.html">
-                <strong>✅ 完整版（推荐）</strong>
-                <span class="badge badge-new">NEW</span>
-                <p class="description" style="margin:5px 0 0 0;font-size:12px;">支持用户注册、数据永久保存（需配置 Supabase）</p>
-            </a>
-            <a href="simple-client.html">
-                <strong>⚡ 轻量版</strong>
-                <p class="description" style="margin:5px 0 0 0;font-size:12px;">无需配置，数据存储在浏览器本地</p>
-            </a>
-            <a href="simple-merchant.html">
-                <strong>🏪 商家端</strong>
-                <p class="description" style="margin:5px 0 0 0;font-size:12px;">商家入驻、商品管理</p>
-            </a>
-            <a href="simple-admin.html">
-                <strong>👨‍💼 管理后台</strong>
-                <p class="description" style="margin:5px 0 0 0;font-size:12px;">系统管理、数据统计</p>
-            </a>
+        <div class="version-section">
+            <div class="version-title">🌐 MongoDB 版本（推荐）</div>
+            <div class="links">
+                <a href="simple-client-mongodb.html">
+                    <strong>✅ 用户端</strong>
+                    <span class="badge badge-mongo">MongoDB</span>
+                    <p class="description" style="margin:5px 0 0 0;font-size:12px;">连接后端 API，数据存储在 MongoDB Atlas</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="version-section">
+            <div class="version-title">☁️ Supabase 版本</div>
+            <div class="links">
+                <a href="simple-client-supabase.html">
+                    <strong>🔄 用户端</strong>
+                    <span class="badge badge-supabase">Supabase</span>
+                    <p class="description" style="margin:5px 0 0 0;font-size:12px;">使用 Supabase 作为后端数据库</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="version-section">
+            <div class="version-title">💾 本地版本</div>
+            <div class="links">
+                <a href="simple-client.html">
+                    <strong>⚡ 用户端</strong>
+                    <span class="badge badge-local">LocalStorage</span>
+                    <p class="description" style="margin:5px 0 0 0;font-size:12px;">无需后端，数据存储在浏览器本地</p>
+                </a>
+                <a href="simple-merchant.html">
+                    <strong>🏪 商家端</strong>
+                    <span class="badge badge-local">LocalStorage</span>
+                </a>
+                <a href="simple-admin.html">
+                    <strong>👨‍💼 管理后台</strong>
+                    <span class="badge badge-local">LocalStorage</span>
+                </a>
+            </div>
         </div>
 
         <div style="margin-top:40px;font-size:12px;opacity:0.7;">
-            <p>技术栈: Vue.js | Element Plus | Express | MongoDB</p>
+            <p>技术栈: Vue.js | Express | MongoDB Atlas</p>
             <p style="margin-top:10px;">部署平台: GitHub Pages</p>
         </div>
     </div>

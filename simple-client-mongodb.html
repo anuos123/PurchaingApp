@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>采购系统 - MongoDB版</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Microsoft YaHei', sans-serif; background: #f5f5f5; }
+    .header { background: #67C23A; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 20px; font-weight: bold; }
+    .nav { display: flex; gap: 20px; }
+    .nav a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; }
+    .nav a:hover { background: rgba(255,255,255,0.2); }
+    .nav a.active { background: rgba(255,255,255,0.3); }
+    .main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+    .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+    .card-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #333; }
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .product-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s; }
+    .product-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .product-image { height: 150px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; }
+    .product-image img { width: 100%; height: 100%; object-fit: cover; }
+    .product-info { padding: 15px; }
+    .product-name { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+    .product-desc { font-size: 12px; color: #666; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .product-price { font-size: 20px; color: #E6A23C; font-weight: bold; margin-bottom: 5px; }
+    .product-stock { font-size: 12px; color: #67C23A; margin-bottom: 10px; }
+    .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s; }
+    .btn-primary { background: #67C23A; color: white; }
+    .btn-primary:hover { background: #85CE61; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-danger { background: #F56C6C; color: white; }
+    .btn-danger:hover { background: #F78989; }
+    .btn-outline { background: white; color: #67C23A; border: 1px solid #67C23A; }
+    .btn-outline:hover { background: #f0f9f0; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    .table { width: 100%; border-collapse: collapse; }
+    .table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+    .table th { background: #f8f9fa; font-weight: bold; }
+    .tag { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; }
+    .tag-warning { background: #fef08a; color: #854d0e; }
+    .tag-success { background: #bbf7d0; color: #166534; }
+    .tag-danger { background: #fecaca; color: #991b1b; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 8px; padding: 20px; width: 90%; max-width: 450px; }
+    .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .login-container { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+    .login-card { width: 400px; }
+    .user-info { display: flex; align-items: center; gap: 15px; }
+    .cart-badge { background: #F56C6C; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .loading { text-align: center; padding: 20px; color: #999; }
+    .error { color: #F56C6C; padding: 10px; background: #fef0f0; border-radius: 4px; margin-bottom: 10px; }
+    .success { color: #67C23A; padding: 10px; background: #f0f9f0; border-radius: 4px; margin-bottom: 10px; }
+    .api-url { font-family: monospace; font-size: 12px; color: #999; margin-top: 10px; }
+    .api-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #F56C6C; margin-right: 5px; }
+    .api-status.online { background: #67C23A; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">采购系统 <span style="font-size:12px; color:#666; font-weight:normal;">MongoDB版</span></div>
+    <div class="nav" id="nav">
+      <a href="#products" class="active" onclick="showTab('products')">商品列表</a>
+      <a href="#cart" onclick="showTab('cart')">购物车 <span class="cart-badge" id="cartBadge">0</span></a>
+      <a href="#orders" onclick="showTab('orders')">我的订单</a>
+      <a href="#addProduct" onclick="showTab('addProduct')">发布商品</a>
+    </div>
+    <div class="user-info" id="userInfo">
+      <span id="userName">未登录</span>
+      <button class="btn btn-primary" id="authBtn" onclick="showAuthModal()">登录</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="apiStatus" class="card" style="display:none;">
+      <div style="display:flex;align-items:center;">
+        <span class="api-status" id="apiStatusIcon"></span>
+        <span id="apiStatusText">连接状态检测中...</span>
+      </div>
+      <div class="api-url" id="apiUrl"></div>
+    </div>
+
+    <div id="loginView" class="login-container">
+      <div class="card login-card">
+        <div class="card-header">用户登录</div>
+        <div id="loginError" class="error" style="display:none;"></div>
+        <div class="form-group">
+          <label>邮箱</label>
+          <input type="email" id="loginEmail" placeholder="请输入邮箱">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="loginPassword" placeholder="请输入密码" onkeypress="if(event.key==='Enter')login()">
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="login()">登录</button>
+        <div style="text-align:center;margin-top:15px;">
+          <a href="#" onclick="showRegisterModal();return false;">还没有账号？立即注册</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="productsView" style="display:none;">
+      <div class="card">
+        <div class="card-header">商品列表</div>
+        <div id="productsGrid" class="product-grid"></div>
+      </div>
+    </div>
+
+    <div id="cartView" style="display:none;">
+      <div class="card">
+        <div class="card-header">购物车</div>
+        <div id="cartItems"></div>
+        <div style="margin-top:20px;text-align:right;">
+          <strong>总计: ¥<span id="cartTotal">0.00</span></strong>
+          <button class="btn btn-primary" style="margin-left:20px;" onclick="placeOrder()">提交订单</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="ordersView" style="display:none;">
+      <div class="card">
+        <div class="card-header">我的订单</div>
+        <div id="ordersList"></div>
+      </div>
+    </div>
+
+    <div id="addProductView" style="display:none;">
+      <div class="card" style="max-width: 600px;">
+        <div class="card-header">发布商品</div>
+        <div id="addProductError" class="error" style="display:none;"></div>
+        <div class="form-group">
+          <label>商品名称</label>
+          <input type="text" id="productName" placeholder="请输入商品名称">
+        </div>
+        <div class="form-group">
+          <label>商品价格</label>
+          <input type="number" id="productPrice" placeholder="请输入商品价格" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>库存数量</label>
+          <input type="number" id="productStock" placeholder="请输入库存数量" step="1">
+        </div>
+        <div class="form-group">
+          <label>商品分类</label>
+          <input type="text" id="productCategory" placeholder="请输入商品分类">
+        </div>
+        <div class="form-group">
+          <label>商品描述</label>
+          <textarea id="productDesc" placeholder="请输入商品描述" rows="3"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="addProduct()">发布商品</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 注册模态框 -->
+  <div class="modal-overlay" id="registerModal">
+    <div class="modal">
+      <div class="modal-header">用户注册</div>
+      <div id="registerError" class="error" style="display:none;"></div>
+      <div class="form-group">
+        <label>姓名</label>
+        <input type="text" id="registerName" placeholder="请输入姓名">
+      </div>
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="registerEmail" placeholder="请输入邮箱">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="registerPassword" placeholder="请输入密码">
+      </div>
+      <div class="form-group">
+        <label>角色</label>
+        <select id="registerRole">
+          <option value="user">普通用户</option>
+          <option value="merchant">商家</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="register()">注册</button>
+        <button class="btn btn-outline" onclick="closeRegisterModal()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading" id="loading" style="display:none;">加载中...</div>
+
+  <script>
+    // ============================================
+    // API 配置
+    // ============================================
+    const API_BASE_URL = 'http://localhost:3000/api';
+    // 生产环境使用相对路径
+    // const API_BASE_URL = '/api';
+
+    // ============================================
+    // 全局状态
+    // ============================================
+    let currentUser = null;
+    let products = [];
+    let cart = [];
+
+    // ============================================
+    // 初始化
+    // ============================================
+    async function init() {
+      showLoading(true);
+      await checkAuth();
+      await checkApiStatus();
+      await loadProducts();
+      showLoading(false);
+    }
+
+    // ============================================
+    // API 工具函数
+    // ============================================
+    async function apiRequest(url, method = 'GET', body = null, headers = {}) {
+      try {
+        const options = {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            ...headers
+          }
+        };
+
+        if (body) options.body = JSON.stringify(body);
+
+        const token = localStorage.getItem('token');
+        if (token) {
+          options.headers.Authorization = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE_URL}${url}`, options);
+        const data = await response.json();
+        return { data, status: response.status };
+      } catch (error) {
+        console.error('API 请求失败:', error);
+        return { data: null, status: 500, error: error.message };
+      }
+    }
+
+    // ============================================
+    // API 状态检测
+    // ============================================
+    async function checkApiStatus() {
+      const { status } = await apiRequest('/products');
+      const statusIcon = document.getElementById('apiStatusIcon');
+      const statusText = document.getElementById('apiStatusText');
+      
+      if (status === 200) {
+        statusIcon.classList.add('online');
+        statusText.textContent = '✅ API 服务正常';
+      } else {
+        statusIcon.classList.remove('online');
+        statusText.textContent = '❌ API 服务不可用，请启动本地服务器';
+      }
+      document.getElementById('apiStatus').style.display = 'block';
+    }
+
+    // ============================================
+    // 认证相关
+    // ============================================
+    async function checkAuth() {
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
+
+      if (token && userData) {
+        currentUser = JSON.parse(userData);
+        updateUserInfo();
+        document.getElementById('loginView').style.display = 'none';
+      }
+    }
+
+    async function login() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        showError('loginError', '请输入邮箱和密码');
+        return;
+      }
+
+      showLoading(true);
+      const { data, status } = await apiRequest('/auth/login', 'POST', { email, password });
+      showLoading(false);
+
+      if (status !== 200 || !data.token) {
+        showError('loginError', data?.msg || '登录失败');
+        return;
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      currentUser = data.user;
+      updateUserInfo();
+      document.getElementById('loginView').style.display = 'none';
+      document.getElementById('loginPassword').value = '';
+      alert('登录成功！');
+    }
+
+    async function register() {
+      const name = document.getElementById('registerName').value.trim();
+      const email = document.getElementById('registerEmail').value.trim();
+      const password = document.getElementById('registerPassword').value;
+      const role = document.getElementById('registerRole').value;
+
+      if (!name || !email || !password) {
+        showError('registerError', '请填写所有字段');
+        return;
+      }
+
+      if (password.length < 6) {
+        showError('registerError', '密码至少6位');
+        return;
+      }
+
+      showLoading(true);
+      const { data, status } = await apiRequest('/auth/register', 'POST', { name, email, password, role });
+      showLoading(false);
+
+      if (status !== 200 || !data.token) {
+        showError('registerError', data?.msg || '注册失败');
+        return;
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      currentUser = data.user;
+      updateUserInfo();
+      closeRegisterModal();
+      document.getElementById('loginView').style.display = 'none';
+      alert('注册成功！');
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      currentUser = null;
+      cart = [];
+      updateCartBadge();
+      updateUserInfo();
+      document.getElementById('loginView').style.display = 'flex';
+      showTab('products');
+    }
+
+    // ============================================
+    // 商品相关
+    // ============================================
+    async function loadProducts() {
+      const { data, status } = await apiRequest('/products');
+
+      if (status !== 200) {
+        console.error('加载商品失败');
+        return;
+      }
+
+      products = data || [];
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('productsGrid');
+
+      if (products.length === 0) {
+        grid.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">暂无商品</p>';
+        return;
+      }
+
+      grid.innerHTML = products.map(p => `
+        <div class="product-card">
+          <div class="product-image">
+            <span style="font-size:48px;color:#ddd;">📦</span>
+          </div>
+          <div class="product-info">
+            <div class="product-name">${escapeHtml(p.name)}</div>
+            <div class="product-desc">${escapeHtml(p.description || '')}</div>
+            <div class="product-price">¥${p.price?.toFixed(2) || '0.00'}</div>
+            <div class="product-stock">库存: ${p.stock || 0}</div>
+            <button class="btn btn-primary" onclick="addToCart('${p._id}')" ${p.stock <= 0 ? 'disabled' : ''}>
+              ${p.stock > 0 ? '加入购物车' : '缺货'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function addProduct() {
+      if (!currentUser || currentUser.role !== 'merchant') {
+        alert('只有商家才能发布商品');
+        return;
+      }
+
+      const name = document.getElementById('productName').value.trim();
+      const price = parseFloat(document.getElementById('productPrice').value);
+      const stock = parseInt(document.getElementById('productStock').value);
+      const category = document.getElementById('productCategory').value.trim();
+      const description = document.getElementById('productDesc').value.trim();
+
+      if (!name || isNaN(price) || isNaN(stock)) {
+        showError('addProductError', '请填写必填字段');
+        return;
+      }
+
+      showLoading(true);
+      const { data, status } = await apiRequest('/products', 'POST', {
+        name,
+        price,
+        stock,
+        category,
+        description
+      });
+      showLoading(false);
+
+      if (status !== 200) {
+        showError('addProductError', data?.msg || '发布失败');
+        return;
+      }
+
+      alert('商品发布成功！');
+      document.getElementById('productName').value = '';
+      document.getElementById('productPrice').value = '';
+      document.getElementById('productStock').value = '';
+      document.getElementById('productCategory').value = '';
+      document.getElementById('productDesc').value = '';
+      await loadProducts();
+      showTab('products');
+    }
+
+    // ============================================
+    // 购物车相关
+    // ============================================
+    function addToCart(productId) {
+      const product = products.find(p => p._id === productId);
+      if (!product) return;
+
+      const existingItem = cart.find(item => item.productId === productId);
+      if (existingItem) {
+        if (existingItem.quantity < product.stock) {
+          existingItem.quantity++;
+        } else {
+          alert('库存不足');
+          return;
+        }
+      } else {
+        cart.push({
+          productId,
+          name: product.name,
+          price: product.price,
+          quantity: 1
+        });
+      }
+
+      updateCartBadge();
+      alert('已添加到购物车');
+    }
+
+    function updateCartBadge() {
+      document.getElementById('cartBadge').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+    }
+
+    function showCart() {
+      const container = document.getElementById('cartItems');
+
+      if (cart.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">购物车是空的</p>';
+        document.getElementById('cartTotal').textContent = '0.00';
+        return;
+      }
+
+      container.innerHTML = cart.map((item, index) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:15px;border-bottom:1px solid #eee;">
+          <div>
+            <strong>${escapeHtml(item.name)}</strong>
+            <div style="color:#666;font-size:12px;">¥${item.price.toFixed(2)} x ${item.quantity}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="btn" onclick="updateCartQuantity(${index}, -1)">-</button>
+            <span>${item.quantity}</span>
+            <button class="btn" onclick="updateCartQuantity(${index}, 1)">+</button>
+            <button class="btn btn-danger" onclick="removeFromCart(${index})">删除</button>
+          </div>
+        </div>
+      `).join('');
+
+      const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      document.getElementById('cartTotal').textContent = total.toFixed(2);
+    }
+
+    function updateCartQuantity(index, delta) {
+      cart[index].quantity += delta;
+      if (cart[index].quantity <= 0) {
+        cart.splice(index, 1);
+      }
+      updateCartBadge();
+      showCart();
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCartBadge();
+      showCart();
+    }
+
+    // ============================================
+    // 订单相关
+    // ============================================
+    async function placeOrder() {
+      if (!currentUser) {
+        alert('请先登录');
+        showAuthModal();
+        return;
+      }
+
+      if (cart.length === 0) {
+        alert('购物车是空的');
+        return;
+      }
+
+      const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+      showLoading(true);
+      const { data, status } = await apiRequest('/orders', 'POST', {
+        items: cart,
+        total
+      });
+      showLoading(false);
+
+      if (status !== 200) {
+        alert('下单失败: ' + (data?.msg || '未知错误'));
+        return;
+      }
+
+      alert('订单提交成功！');
+      cart = [];
+      updateCartBadge();
+      showTab('cart');
+    }
+
+    async function loadOrders() {
+      if (!currentUser) return;
+
+      showLoading(true);
+      const { data, status } = await apiRequest('/orders');
+      showLoading(false);
+
+      if (status !== 200) {
+        console.error('加载订单失败');
+        return;
+      }
+
+      const container = document.getElementById('ordersList');
+
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">暂无订单</p>';
+        return;
+      }
+
+      container.innerHTML = data.map(order => `
+        <div style="border:1px solid #eee;border-radius:8px;padding:15px;margin-bottom:15px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <strong>订单 #${order._id.slice(0, 8)}</strong>
+            <span class="tag ${getStatusTagClass(order.status)}">${getStatusText(order.status)}</span>
+          </div>
+          <div style="color:#666;font-size:12px;margin-bottom:10px;">
+            ${new Date(order.createdAt).toLocaleString('zh-CN')}
+          </div>
+          <div style="margin-bottom:10px;">
+            ${order.items.map(item => `
+              <div style="padding:5px 0;">
+                ${escapeHtml(item.name)} x ${item.quantity} - ¥${(item.price * item.quantity).toFixed(2)}
+              </div>
+            `).join('')}
+          </div>
+          <div style="text-align:right;font-size:18px;color:#E6A23C;">
+            总计: ¥${order.total.toFixed(2)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getStatusTagClass(status) {
+      const classes = {
+        'pending': 'tag-warning',
+        'processing': 'tag-primary',
+        'completed': 'tag-success',
+        'cancelled': 'tag-danger'
+      };
+      return classes[status] || 'tag-warning';
+    }
+
+    function getStatusText(status) {
+      const texts = {
+        'pending': '待处理',
+        'processing': '处理中',
+        'completed': '已完成',
+        'cancelled': '已取消'
+      };
+      return texts[status] || status;
+    }
+
+    // ============================================
+    // UI 辅助函数
+    // ============================================
+    function showTab(tab) {
+      document.getElementById('productsView').style.display = tab === 'products' ? 'block' : 'none';
+      document.getElementById('cartView').style.display = tab === 'cart' ? 'block' : 'none';
+      document.getElementById('ordersView').style.display = tab === 'orders' ? 'block' : 'none';
+      document.getElementById('addProductView').style.display = tab === 'addProduct' ? 'block' : 'none';
+
+      document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+      const activeLink = document.querySelector(`.nav a[href="#${tab}"]`);
+      if (activeLink) activeLink.classList.add('active');
+
+      if (tab === 'cart') showCart();
+      if (tab === 'orders') loadOrders();
+    }
+
+    function updateUserInfo() {
+      if (currentUser) {
+        document.getElementById('userName').textContent = currentUser.name || currentUser.email;
+        document.getElementById('authBtn').textContent = '退出';
+        document.getElementById('authBtn').onclick = logout;
+      } else {
+        document.getElementById('userName').textContent = '未登录';
+        document.getElementById('authBtn').textContent = '登录';
+        document.getElementById('authBtn').onclick = showAuthModal;
+      }
+    }
+
+    function showAuthModal() {
+      document.getElementById('loginView').style.display = 'flex';
+    }
+
+    function showRegisterModal() {
+      document.getElementById('registerModal').classList.add('show');
+    }
+
+    function closeRegisterModal() {
+      document.getElementById('registerModal').classList.remove('show');
+    }
+
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'block' : 'none';
+    }
+
+    function showError(elementId, message) {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 5000);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 初始化应用
+    init();
+  </script>
+</body>
+</html>
