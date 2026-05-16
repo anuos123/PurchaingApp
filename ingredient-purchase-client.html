@@ -310,7 +310,31 @@
   </div>
 
   <script>
-    const API_BASE_URL = 'http://localhost:3000/api';
+    const API_BASE_URL = 'https://anuosapp-production.up.railway.app/api';
+
+    const STORAGE_KEYS = {
+      PURCHASES: 'purchases',
+      HISTORY: 'purchaseHistory',
+      CUSTOMERS: 'customers'
+    };
+
+    function loadData(key) {
+      try {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : [];
+      } catch (e) {
+        console.error('读取数据失败:', e);
+        return [];
+      }
+    }
+
+    function saveData(key, data) {
+      try {
+        localStorage.setItem(key, JSON.stringify(data));
+      } catch (e) {
+        console.error('保存数据失败:', e);
+      }
+    }
 
     async function apiRequest(endpoint, method = 'GET', body = null) {
       try {
@@ -680,8 +704,8 @@
       return values;
     }
 
-    function showSelectIngredientModal() {
-      const ingredients = loadData(STORAGE_KEYS.);
+    async function showSelectIngredientModal() {
+      const ingredients = await loadIngredients();
       const list = document.getElementById('ingredientSelectList');
       
       if (ingredients.length === 0) {
@@ -689,16 +713,16 @@
       } else {
         list.innerHTML = ingredients.map(i => `
           <div style="padding:10px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <input type="checkbox" class="ingredient-select-cb" value="${i.id}" data-name="${i.name}" data-price="${i.price}">
+            <input type="checkbox" class="ingredient-select-cb" value="${i._id}" data-name="${i.name}" data-price="${i.price}">
             <span style="flex:1; min-width:100px;">${i.name}</span>
             <span style="color:#666; font-size:12px;">${i.category}</span>
             <div style="display:flex; align-items:center; gap:5px;">
               <span style="font-size:12px; color:#999;">数量:</span>
-              <input type="number" class="ingredient-quantity" data-id="${i.id}" value="1" min="1" max="999" style="width:60px; padding:4px; border:1px solid #ddd; border-radius:3px; font-size:12px;">
+              <input type="number" class="ingredient-quantity" data-id="${i._id}" value="1" min="1" max="999" style="width:60px; padding:4px; border:1px solid #ddd; border-radius:3px; font-size:12px;">
             </div>
             <div style="display:flex; align-items:center; gap:5px;">
               <span style="font-size:12px; color:#999;">单价:</span>
-              <input type="number" class="ingredient-price" data-id="${i.id}" value="${i.price.toFixed(2)}" min="0" step="0.01" style="width:80px; padding:4px; border:1px solid #ddd; border-radius:3px; font-size:12px;">
+              <input type="number" class="ingredient-price" data-id="${i._id}" value="${i.price.toFixed(2)}" min="0" step="0.01" style="width:80px; padding:4px; border:1px solid #ddd; border-radius:3px; font-size:12px;">
             </div>
           </div>
         `).join('');
@@ -718,7 +742,7 @@
         return;
       }
       
-      let purchases = loadData(STORAGE_KEYS.);
+      let purchases = loadData(STORAGE_KEYS.PURCHASES);
       let startIndex = purchases.length;
       let addedCount = 0;
       let mergedCount = 0;
@@ -758,7 +782,7 @@
         }
       });
       
-      saveData(STORAGE_KEYS., );
+      saveData(STORAGE_KEYS.PURCHASES, purchases);
       closeSelectIngredientModal();
       renderPurchases();
       
@@ -771,7 +795,7 @@
     function renderPurchases() {
       const search = document.getElementById('purchaseSearch').value.toLowerCase();
       
-      let purchases = loadData(STORAGE_KEYS.);
+      let purchases = loadData(STORAGE_KEYS.PURCHASES);
       
       if (search) {
         purchases = purchases.filter(p => p.name.toLowerCase().includes(search));
@@ -831,27 +855,27 @@
     }
 
     function updatePurchaseStatus(purchaseId, status) {
-      let purchases = loadData(STORAGE_KEYS.);
+      let purchases = loadData(STORAGE_KEYS.PURCHASES);
       const purchase = purchases.find(p => p.id === purchaseId);
       
       if (!purchase) return;
       
       purchase.status = status;
-      saveData(STORAGE_KEYS., );
+      saveData(STORAGE_KEYS.PURCHASES, purchases);
       renderPurchases();
     }
 
     function deletePurchase(id) {
       if (!confirm('确定要删除这个采购项吗？')) return;
       
-      let purchases = loadData(STORAGE_KEYS.);
+      let purchases = loadData(STORAGE_KEYS.PURCHASES);
       purchases = purchases.filter(p => p.id !== id);
-      saveData(STORAGE_KEYS., );
+      saveData(STORAGE_KEYS.PURCHASES, purchases);
       renderPurchases();
     }
 
     function deleteAllPurchases() {
-      let purchases = loadData(STORAGE_KEYS.);
+      let purchases = loadData(STORAGE_KEYS.PURCHASES);
       
       if (purchases.length === 0) {
         alert('采购任务为空！');
@@ -862,13 +886,13 @@
         return;
       }
       
-      saveData(STORAGE_KEYS., );
+      saveData(STORAGE_KEYS.PURCHASES, []);
       renderPurchases();
       alert('已清空所有采购任务！');
     }
 
     function completeTodayPurchases() {
-      let purchases = loadData(STORAGE_KEYS.);
+      let purchases = loadData(STORAGE_KEYS.PURCHASES);
       
       if (purchases.length === 0) {
         alert('采购任务为空！');
@@ -897,14 +921,14 @@
       });
       
       purchases = purchases.filter(p => p.status !== 'completed');
-      saveData(STORAGE_KEYS., );
+      saveData(STORAGE_KEYS.PURCHASES, purchases);
       
       renderPurchases();
       alert(`已完成 ${completedPurchases.length} 项采购！已记录到历史采购，${notCompleted.length} 项未完成的已保留。`);
     }
 
     function addPurchaseHistory(purchase) {
-      let history = loadData(STORAGE_KEYS.);
+      let history = loadData(STORAGE_KEYS.HISTORY);
       const historyId = 'H-' + Date.now();
       
       history.push({
@@ -918,11 +942,11 @@
         note: purchase.note
       });
       
-      saveData(STORAGE_KEYS., );
+      saveData(STORAGE_KEYS.HISTORY, history);
     }
 
     function renderPurchaseHistory(filteredData) {
-      let history = filteredData || loadData(STORAGE_KEYS.);
+      let history = filteredData || loadData(STORAGE_KEYS.HISTORY);
       
       history.sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
       
@@ -958,7 +982,7 @@
 
     function filterPurchaseHistory() {
       const period = document.getElementById('historyPeriod').value;
-      let history = loadData(STORAGE_KEYS.);
+      let history = loadData(STORAGE_KEYS.HISTORY);
       
       const today = new Date();
       let filtered = history;
@@ -1008,7 +1032,7 @@
     }
 
     function clearAllPurchaseHistory() {
-      let history = loadData(STORAGE_KEYS.);
+      let history = loadData(STORAGE_KEYS.HISTORY);
       
       if (history.length === 0) {
         alert('历史采购清单为空！');
@@ -1019,7 +1043,7 @@
         return;
       }
       
-      saveData(STORAGE_KEYS., );
+      saveData(STORAGE_KEYS.HISTORY, []);
       renderPurchaseHistory();
       alert('已清空所有历史采购记录！');
     }
@@ -1055,7 +1079,7 @@
         return;
       }
       
-      let customers = loadData(STORAGE_KEYS.);
+      let customers = loadData(STORAGE_KEYS.CUSTOMERS);
       
       if (editId) {
         const index = customers.findIndex(c => c.id === editId);
@@ -1087,14 +1111,14 @@
         });
       }
       
-      saveData(STORAGE_KEYS., );
+      saveData(STORAGE_KEYS.CUSTOMERS, customers);
       closeAddCustomerModal();
       renderCustomers();
       alert(editId ? '客户信息更新成功！' : '客户添加成功！');
     }
 
     function renderCustomers() {
-      const customers = loadData(STORAGE_KEYS.);
+      const customers = loadData(STORAGE_KEYS.CUSTOMERS);
       const tbody = document.getElementById('customersTable');
       
       if (customers.length === 0) {
@@ -1121,7 +1145,7 @@
     }
 
     function editCustomer(id) {
-      const customers = loadData(STORAGE_KEYS.);
+      const customers = loadData(STORAGE_KEYS.CUSTOMERS);
       const customer = customers.find(c => c.id === id);
       
       if (customer) {
