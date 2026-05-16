@@ -1,9 +1,0 @@
-name: purchasing-client
-services:
-  - name: client
-    type: web
-    build:
-      dockerfile: Dockerfile.client
-    ports:
-      - port: 80
-        http: true
