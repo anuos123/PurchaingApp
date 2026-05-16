@@ -21,6 +21,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
+app.use('/api/ingredients', require('./routes/ingredients'));
 
 app.get('/', (req, res) => {
   res.send('采购系统服务端运行中...');
