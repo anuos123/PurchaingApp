@@ -1,32 +1,10 @@
-# Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Build outputs
 dist/
 build/
-.output/
-.nuxt/
-
-# Environment variables
 .env
-.env.local
-.env.*.local
-
-# Editor directories and files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS files
 .DS_Store
-Thumbs.db
-
-# Logs
-logs/
 *.log
+.vercel
+.zeabur
+coverage/
+.nyc_output/

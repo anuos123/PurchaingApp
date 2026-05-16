@@ -1,5 +1,5 @@
 {
-  "name": "purchaing-app",
+  "name": "purchasing-app",
   "version": 2,
   "builds": [
     {
@@ -24,24 +24,13 @@
       "dest": "/client/dist/index.html"
     },
     {
-      "src": "/index.html",
-      "dest": "/client/dist/index.html"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/client/dist/assets/$1"
-    },
-    {
-      "src": "/css/(.*)",
-      "dest": "/client/dist/css/$1"
-    },
-    {
-      "src": "/js/(.*)",
-      "dest": "/client/dist/js/$1"
-    },
-    {
       "src": "/(.*)",
       "dest": "/client/dist/$1"
     }
-  ]
+  ],
+  "env": {
+    "MONGODB_URI": "@mongodb_uri",
+    "JWT_SECRET": "@jwt_secret",
+    "JWT_EXPIRE": "7d"
+  }
 }
