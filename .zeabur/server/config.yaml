@@ -1,0 +1,14 @@
+name: purchasing-server
+services:
+  - name: server
+    type: web
+    build:
+      dockerfile: Dockerfile.server
+    ports:
+      - port: 3000
+        http: true
+    env:
+      PORT: 3000
+      MONGODB_URI: mongodb+srv://Vercel-Admin-atlas-fuchsia-lamp:YvoKsbPWnErspVyb@atlas-fuchsia-lamp.voqfqxg.mongodb.net/?retryWrites=true&w=majority
+      JWT_SECRET: e59adccec84a8ababb1d97f64719deea966e622848deb24891af712ea0225007
+      JWT_EXPIRE: 7d
